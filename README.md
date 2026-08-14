@@ -159,8 +159,15 @@ is the one part of the setup you cannot otherwise check.
 
 If your building is not mapped at all, or detection picks the wrong *wall*, drag the line
 onto the front of the house instead. It snaps to a wall whenever an outline is loaded, so
-you get the building's real angle rather than an eyeballed one. Arrow keys nudge by 1° (5°
-with Shift); hold Shift while dragging to turn snapping off.
+you get the building's real angle rather than an eyeballed one.
+
+Three levels of adjustment, coarse to fine:
+
+| Control | Step |
+| --- | --- |
+| Drag the line | free, snapping to a wall within 8° (hold Shift to drag past it) |
+| Arrow keys, with the line focused | 1°, or 5° with Shift |
+| The rotate buttons | 0.1° |
 
 The lookup runs once per button press and only in the editor. The result is stored as a
 single number, so nothing is queried while the card is running.

@@ -24,6 +24,16 @@ import { DEFAULT_SIDEWAYS_FROM } from '../data/airflow';
 import type { HomeAssistant } from '../ha-types';
 
 /**
+ * Step for the rotate buttons, in degrees.
+ *
+ * Deliberately finer than the keyboard's 1 degree: dragging and the arrow keys
+ * get you to roughly the right angle, and these are for the last fraction of a
+ * degree. The bearing is stored to one decimal, so this is the smallest step
+ * that survives a round trip through the config.
+ */
+const NUDGE_STEP = 0.1;
+
+/**
  * Interactive facade alignment, for use inside the card editor.
  *
  * This lives in the editor rather than the card because the editor is the only
@@ -97,10 +107,18 @@ export class FacadePicker extends LitElement {
           <button class="primary" ?disabled=${this._busy} @click=${this._detect}>
             ${this._busy ? 'Looking up…' : 'Detect from OpenStreetMap'}
           </button>
-          <button class="nudge" title="Rotate anticlockwise" @click=${() => this._nudge(-1)}>
+          <button
+            class="nudge"
+            title="Rotate 0.1° anticlockwise"
+            @click=${() => this._nudge(-NUDGE_STEP)}
+          >
             <ha-icon icon="mdi:rotate-left"></ha-icon>
           </button>
-          <button class="nudge" title="Rotate clockwise" @click=${() => this._nudge(1)}>
+          <button
+            class="nudge"
+            title="Rotate 0.1° clockwise"
+            @click=${() => this._nudge(NUDGE_STEP)}
+          >
             <ha-icon icon="mdi:rotate-right"></ha-icon>
           </button>
         </div>
@@ -116,13 +134,11 @@ export class FacadePicker extends LitElement {
         <p class="hint">
           ${
             this._buildings.length > 1
-              ? html`<strong>Click your house on the map</strong> to use its outline instead. `
+              ? html`<strong>Click your house on the map</strong> to use its outline. `
               : nothing
           }
-          Press Detect to read building outlines from OpenStreetMap and face the front wall towards
-          the nearest street. You can also drag the line onto the front of the house; it snaps to a
-          wall when it gets close. Arrow keys nudge by 1°, Shift for 5°, and holding Shift while
-          dragging turns snapping off.
+          Drag the line to rotate it onto the front of the house, or use the buttons to adjust by
+          0.1°.
         </p>
       </div>
     `;
