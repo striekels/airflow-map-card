@@ -100,6 +100,21 @@ describe('fetchFootprints', () => {
     vi.unstubAllGlobals();
   });
 
+  it('uses GET with the query in the URL', async () => {
+    // Not cosmetic. A POST whose content type Overpass rejects returns 406 with
+    // no Access-Control-Allow-Origin header, which the browser reports as an
+    // opaque CORS failure. GET carries no body, so there is nothing to
+    // negotiate and no preflight.
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    await fetchFootprints(11.1, 21.1);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(init?.method).toBe('GET');
+    expect(init?.body).toBeUndefined();
+    expect(String(url)).toContain('overpass-api.de/api/interpreter?data=');
+    expect(decodeURIComponent(String(url))).toContain('["building"]');
+  });
+
   it('retries a transient overload and succeeds', async () => {
     // Measured against the live service: a 504 is routinely followed by a 200
     // seconds later, which is why retrying beats failing the user immediately.

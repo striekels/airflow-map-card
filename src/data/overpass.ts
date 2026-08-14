@@ -89,11 +89,20 @@ export async function fetchFootprints(
 
     let response: Response;
     try {
-      response = await fetch(ENDPOINT, {
-        method: 'POST',
-        body: new URLSearchParams({ data: query }),
-        signal,
-      });
+      // GET, not POST, and deliberately.
+      //
+      // A POST whose Content-Type Overpass does not accept is answered with
+      // 406 and *no* Access-Control-Allow-Origin header, so the browser
+      // surfaces it as an opaque CORS failure rather than as the rejection it
+      // is. That was reproduced directly: text/plain gives 406 with no CORS
+      // header, form-urlencoded gives 200, GET gives 200. GET has no request
+      // body at all, so there is no content type to negotiate and no preflight,
+      // which removes the entire class of failure.
+      //
+      // The query is a couple of hundred characters, nowhere near any URL
+      // length limit.
+      const url = `${ENDPOINT}?${new URLSearchParams({ data: query }).toString()}`;
+      response = await fetch(url, { method: 'GET', signal });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
       // A thrown fetch is a network-level failure: DNS, TLS, an extension, or a

@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-08-15
+
+### Fixed
+
+- **Detection failed inside Home Assistant with an unhelpful CORS error.** The lookup was a
+  POST; Overpass answers a POST whose content type it will not accept with `406 Not
+  Acceptable` **and no `Access-Control-Allow-Origin` header**, so the browser reports an
+  opaque CORS failure rather than the rejection it actually is. The card then said it could
+  not reach OpenStreetMap, which sent the diagnosis in the wrong direction entirely.
+
+  Reproduced directly against the service: POST as `text/plain` gives 406 with no CORS
+  header, POST as form-urlencoded gives 200, and GET gives 200. The lookup is now a GET with
+  the query in the URL. A GET has no body, so there is no content type to negotiate and no
+  preflight, which removes the whole class of failure. The query is a couple of hundred
+  characters, far short of any URL length limit.
+
+  The `Origin` header was ruled out along the way: Overpass returns
+  `Access-Control-Allow-Origin: *` for a plain-HTTP origin such as `http://ha.local:8123`.
+
 ## [0.3.0] — 2026-08-15
 
 ### Fixed
@@ -214,7 +233,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/striekels/airflow-map-card/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/striekels/airflow-map-card/compare/v0.2.3...v0.2.4
