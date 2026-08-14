@@ -19,7 +19,6 @@ import { MapController } from './map/leaflet-map';
 import { resolveTiles } from './map/tiles';
 import { aspectRatioPadding } from './map/aspect';
 import { renderArrow } from './overlay/wind-arrow';
-import { renderFacadeGuide } from './overlay/facade-guide';
 import {
   BUCKET_COLORS,
   BUCKET_OPACITY,
@@ -28,19 +27,11 @@ import {
   computeAirflow,
   type AirflowResult,
 } from './data/airflow';
-import {
-  angularDifference,
-  bearingFromDrag,
-  cardinalName,
-  normalizeAngle,
-  parseBearing,
-  pointerBearing,
-  windTravelBearing,
-} from './data/bearing';
+import { angularDifference, cardinalName, parseBearing, windTravelBearing } from './data/bearing';
 import { resolveWind, windEntityIds, type WindReading } from './data/wind-source';
 import { resolveRow, rowEntityIds, rowTemplates, type ResolvedRow } from './data/rows';
 import { TemplateSubscriber } from './data/templates';
-import { capturePointer, handleAction } from './data/actions';
+import { handleAction } from './data/actions';
 import { strings } from './localize';
 import './editor';
 
@@ -55,14 +46,8 @@ export class AirflowMapCard extends LitElement {
   @state() private _config!: AirflowMapCardConfig;
   @state() private _renderTick = 0;
   @state() private _mapError = '';
-  /** Bearing set by dragging that has not been written anywhere durable yet. */
-  @state() private _dragBearing: number | null = null;
-  @state() private _dragging = false;
-  @state() private _dragStatus: 'idle' | 'saved' | 'unsaved' | 'error' = 'idle';
-  @state() private _dragMessage = '';
 
   @query('.map') private _mapElement?: HTMLElement;
-  @query('.guide') private _guideElement?: HTMLElement;
 
   private _hass?: HomeAssistant;
   private _map?: MapController;
@@ -134,11 +119,6 @@ export class AirflowMapCard extends LitElement {
     }
 
     this._config = config;
-    // A new config supersedes any unsaved drag; keeping the override would make
-    // the card disagree with the YAML the user just edited.
-    this._dragBearing = null;
-    this._dragStatus = 'idle';
-    this._dragMessage = '';
     this._templates.sync(rowTemplates(config.rows ?? DEFAULT_ROWS));
   }
 
@@ -207,25 +187,6 @@ export class AirflowMapCard extends LitElement {
                position: relative when the card renders while detached. -->
           <div class="map" style=${styleMap({ position: 'absolute', filter: tiles.filter })}></div>
           ${
-            this._config.house?.show_guide
-              ? renderFacadeGuide({
-                  facadeBearing: this._facadeBearing(),
-                  sidewaysFrom: this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM,
-                  anchor: arrow.anchor ?? [50, 50],
-                  color: 'var(--primary-color, #03a9f4)',
-                  drag: this._dragEnabled
-                    ? {
-                        active: this._dragging,
-                        onPointerDown: this._onGuidePointerDown,
-                        onPointerMove: this._onGuidePointerMove,
-                        onPointerUp: this._onGuidePointerUp,
-                        onKeyDown: this._onGuideKeyDown,
-                      }
-                    : undefined,
-                })
-              : nothing
-          }
-          ${
             arrow.hide
               ? nothing
               : renderArrow({
@@ -241,11 +202,6 @@ export class AirflowMapCard extends LitElement {
                   label: this._ariaLabel(wind, airflowLabel, t),
                   interactive: true,
                 })
-          }
-          ${
-            this._config.house?.show_guide
-              ? this._renderBearingChip(this._facadeBearing())
-              : nothing
           }
           ${
             this._mapError
@@ -333,122 +289,12 @@ export class AirflowMapCard extends LitElement {
   }
 
   private _facadeBearing(): number {
-    // An unsaved drag wins: it is the user's current intent, and reverting under
-    // their finger would make the guide unusable.
-    if (this._dragBearing !== null) return this._dragBearing;
-
     const house = this._config.house ?? {};
     if (house.facade_bearing_entity && this._hass) {
       const parsed = parseBearing(this._hass.states[house.facade_bearing_entity]?.state);
       if (parsed !== null) return parsed;
     }
     return house.facade_bearing ?? 0;
-  }
-
-  /**
-   * Dragging on the live dashboard requires somewhere to put the result.
-   * Without a settable entity the value could only be held for the session,
-   * which is a dead end: the user aligns the house and is then told to copy a
-   * number by hand. Alignment belongs in the editor, where it persists.
-   */
-  private get _dragEnabled(): boolean {
-    const house = this._config.house ?? {};
-    if (!house.show_guide || house.drag_to_align === false) return false;
-
-    const domain = house.facade_bearing_entity?.split('.')[0];
-    return domain === 'input_number' || domain === 'number';
-  }
-
-  private _onGuidePointerDown = (event: PointerEvent): void => {
-    if (!this._dragEnabled) return;
-    capturePointer(event.currentTarget, event.pointerId, true);
-    this._dragging = true;
-    this._dragStatus = 'idle';
-    this._dragMessage = '';
-    // Stop the map from starting a pan under the handle.
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  private _onGuidePointerMove = (event: PointerEvent): void => {
-    if (!this._dragging || !this._guideElement) return;
-    const rect = this._guideElement.getBoundingClientRect();
-    const pointer = pointerBearing(
-      rect.left + rect.width / 2,
-      rect.top + rect.height / 2,
-      event.clientX,
-      event.clientY,
-    );
-    this._dragBearing = bearingFromDrag(pointer, this._facadeBearing());
-    event.preventDefault();
-  };
-
-  private _onGuidePointerUp = (event: PointerEvent): void => {
-    if (!this._dragging) return;
-    this._dragging = false;
-    capturePointer(event.currentTarget, event.pointerId, false);
-    void this._persistFacadeBearing();
-  };
-
-  private _onGuideKeyDown = (event: KeyboardEvent): void => {
-    if (!this._dragEnabled) return;
-    const step = event.shiftKey ? 5 : 1;
-    const delta =
-      event.key === 'ArrowRight' || event.key === 'ArrowUp'
-        ? step
-        : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
-          ? -step
-          : 0;
-    if (delta === 0) return;
-
-    event.preventDefault();
-    this._dragBearing = normalizeAngle(this._facadeBearing() + delta);
-    void this._persistFacadeBearing();
-  };
-
-  /**
-   * A card cannot write its own Lovelace config, so a dragged bearing is made
-   * durable through the configured entity. `_dragEnabled` guarantees there is
-   * a settable one, which is why there is no "nowhere to put it" branch here.
-   */
-  private async _persistFacadeBearing(): Promise<void> {
-    const entityId = this._config.house?.facade_bearing_entity;
-    const value = this._dragBearing;
-    if (value === null || !this._hass || !entityId) return;
-
-    const domain = entityId.split('.')[0];
-    if (domain !== 'input_number' && domain !== 'number') return;
-
-    try {
-      await this._hass.callService(domain, 'set_value', {
-        entity_id: entityId,
-        value: Math.round(value * 10) / 10,
-      });
-      // The entity now drives the bearing; drop the local override so the two
-      // cannot drift apart.
-      this._dragBearing = null;
-      this._dragStatus = 'saved';
-    } catch (error) {
-      this._dragStatus = 'error';
-      this._dragMessage = error instanceof Error ? error.message : String(error);
-    }
-  }
-
-  private _renderBearingChip(bearing: number): TemplateResult {
-    const rounded = (Math.round(bearing * 10) / 10).toFixed(1);
-    const suffix =
-      this._dragStatus === 'saved'
-        ? 'saved'
-        : this._dragStatus === 'error'
-          ? `not saved: ${this._dragMessage}`
-          : '';
-
-    return html`
-      <div class="bearing-chip" title=${suffix}>
-        <span class="value">${rounded}°</span>
-        ${suffix ? html`<span class="hint">${suffix}</span>` : nothing}
-      </div>
-    `;
   }
 
   private _airflow(wind: WindReading): AirflowResult {
@@ -630,107 +476,6 @@ export class AirflowMapCard extends LitElement {
 
     .leaflet-control-attribution a {
       color: var(--secondary-text-color);
-    }
-
-    /*
-     * Above the arrow on purpose: the guide is a transient tuning aid, and the
-     * arrow would otherwise cover exactly the middle you are trying to align.
-     */
-    .guide {
-      position: absolute;
-      z-index: 3;
-      transform: translate(-50%, -50%);
-      width: 78%;
-      height: 78%;
-      pointer-events: none;
-    }
-
-    /*
-     * The box is not square, but the SVG's default preserveAspectRatio letterboxes
-     * the 100x100 drawing to the shorter side and centres it — so the guide stays
-     * circular on any card shape and still lines up with the arrow's anchor.
-     */
-    .guide svg {
-      width: 100%;
-      height: 100%;
-      transform-origin: 50% 50%;
-      transition: transform 0.3s ease;
-      /*
-       * The wall line is drawn far outside the viewBox so it spans the full map.
-       * No drop-shadow filter here: a filter establishes a region roughly the
-       * size of the bounding box, which would clip that overrun. The line's own
-       * white halo stroke provides the contrast instead.
-       */
-      overflow: visible;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .guide svg {
-        transition: none;
-      }
-    }
-
-    /*
-     * The only interactive part of the guide. The guide itself keeps
-     * pointer-events: none so the map underneath stays pannable; a child may
-     * still opt back in.
-     */
-    .wall-handle {
-      pointer-events: stroke;
-      cursor: grab;
-      touch-action: none;
-      outline: none;
-    }
-
-    .wall-handle.dragging {
-      cursor: grabbing;
-    }
-
-    .wall-handle:focus-visible {
-      stroke: var(--primary-color, #03a9f4);
-      stroke-opacity: 0.35;
-    }
-
-    /* While dragging, the guide must track the pointer without lag. */
-    .guide:has(.wall-handle.dragging) svg {
-      transition: none;
-    }
-
-    .bearing-chip {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 4;
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      max-width: calc(100% - 16px);
-      padding: 4px 10px;
-      border: none;
-      border-radius: 14px;
-      background: color-mix(in srgb, var(--airflow-surface) 85%, transparent);
-      color: var(--primary-text-color);
-      font: inherit;
-      font-size: 13px;
-      cursor: default;
-      text-align: left;
-    }
-
-    .bearing-chip.unsaved {
-      cursor: pointer;
-    }
-
-    .bearing-chip .value {
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .bearing-chip .hint {
-      color: var(--secondary-text-color);
-      font-size: 11px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     .arrow {

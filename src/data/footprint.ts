@@ -157,6 +157,30 @@ export function polygonArea(polygon: Point[]): number {
   return Math.abs(signedArea2(openRing(polygon))) / 2;
 }
 
+/**
+ * Mean of a ring's vertices, in lat/lon.
+ *
+ * Vertex mean rather than area centroid, matching `polygonCentroid`. Over a
+ * building-sized ring the two differ by centimetres, far below the precision of
+ * the geometry and irrelevant to centring a map on a house.
+ */
+export function ringCentre(ring: LatLon[]): LatLon | null {
+  const open = openLatLonRing(ring);
+  if (open.length === 0) return null;
+  return {
+    lat: open.reduce((sum, p) => sum + p.lat, 0) / open.length,
+    lon: open.reduce((sum, p) => sum + p.lon, 0) / open.length,
+  };
+}
+
+function openLatLonRing(ring: LatLon[]): LatLon[] {
+  if (ring.length < 2) return ring;
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  const closed = Math.abs(first.lat - last.lat) < 1e-12 && Math.abs(first.lon - last.lon) < 1e-12;
+  return closed ? ring.slice(0, -1) : ring;
+}
+
 export interface BuildingChoice {
   building: LatLon[];
   /** False when the point is outside every candidate and a neighbour was used. */

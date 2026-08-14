@@ -152,6 +152,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
                   .bearing=${this._config.house?.facade_bearing ?? 0}
                   .sidewaysFrom=${this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM}
                   @bearing-changed=${this._bearingChanged}
+                  @location-changed=${this._locationChanged}
                 ></airflow-facade-picker>
               `
         }
@@ -163,6 +164,24 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     event.stopPropagation();
     this._updateConfig({
       house: { ...this._config.house, facade_bearing: event.detail.bearing },
+    });
+  }
+
+  /**
+   * Detection reports the building it settled on, and the card follows it.
+   *
+   * The picker's map can be panned, so detection runs wherever the user is
+   * looking. Leaving the configured position untouched would produce a card
+   * showing one place with a facade angle describing another.
+   */
+  private _locationChanged(event: CustomEvent<{ latitude: number; longitude: number }>): void {
+    event.stopPropagation();
+    this._updateConfig({
+      location: {
+        ...this._config.location,
+        latitude: event.detail.latitude,
+        longitude: event.detail.longitude,
+      },
     });
   }
 
@@ -231,8 +250,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             name: 'facade_bearing_entity',
             selector: { entity: { domain: ['input_number', 'sensor', 'number'] } },
           },
-          { name: 'show_guide', selector: { boolean: {} } },
-          { name: 'drag_to_align', selector: { boolean: {} } },
         ],
       },
       {
@@ -356,8 +373,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       gust_entity: 'Wind gust override',
       facade_bearing: 'Direction the front of the house faces',
       facade_bearing_entity: 'Or take it from an entity',
-      show_guide: 'Show alignment guide on the map (turn off when done)',
-      drag_to_align: 'Drag the guide line on the map to set the bearing',
       mode: 'Mode',
       weak_below: unit ? `Weak wind below (${unit})` : 'Weak wind below',
       sideways_from: 'Sideways from',

@@ -140,17 +140,20 @@ and stores the result as coordinates — nothing is looked up while the card is 
 | --- | --- | --- | --- |
 | `facade_bearing` | number | `0` | Compass direction the front of the house faces. |
 | `facade_bearing_entity` | entity | — | Take it from an entity instead, e.g. an `input_number` you can tune live. |
-| `show_guide` | boolean | `false` | Draw the alignment overlay. See below. |
-| `drag_to_align` | boolean | `true` | Allow dragging the guide line on the live card. Needs both `show_guide` and a settable `facade_bearing_entity`. |
 
 #### Aligning the facade
 
-Open the card editor and look for **Front of the house**. Press **Detect from
-OpenStreetMap** and you are usually done.
+Open the card editor and look for **Front of the house**. Pan the map to your house, press
+**Detect from OpenStreetMap**, and you are usually done.
 
-Detection draws every building it found, labelled with its house number, and picks the one
-containing your configured location. It then reads that outline's walls and faces the one
-pointing at the nearest street.
+Detection runs at whatever the map is centred on, not at the coordinates already in the
+config, so panning is how you tell it where to look. It draws every building it found,
+labelled with its house number, picks the one under the centre, reads that outline's walls,
+and faces the one pointing at the nearest street.
+
+**It also moves the card's position onto the building it settled on**, so the map and the
+facade angle always describe the same house. This is the easiest way to set your location:
+pan, detect, done.
 
 **If it picked the wrong building, click yours on the map.** The detection re-runs against
 that outline. This is worth doing whenever the highlighted house is not the right number:
@@ -174,30 +177,22 @@ single number, so nothing is queried while the card is running.
 
 #### The guide overlay
 
-`house.show_guide: true` draws the same overlay on the card itself, which is useful for
-sanity-checking an existing setup. It draws:
+While you align, the editor draws a guide over the map:
 
-- a **thin dashed line spanning the whole map** — rotate the bearing until it lies along
-  the front wall of your house. It runs edge to edge on purpose: alignment error shows up
-  at the ends of a long line, and it is dashed so the roofline stays visible underneath;
+- a **thin dashed line spanning the whole map** — rotate it until it lies along the front
+  wall of your house. It runs edge to edge on purpose, because alignment error shows up at
+  the ends of a long line, and it is dashed so the roofline stays visible underneath;
 - a **chevron on the rim** marking which side of that line is the front;
 - **two shaded sectors** — wind arriving from either one blows through the house rather
   than across it. The solid-edged sector is the front. Their width is `sideways_from`, so
-  you can see what that threshold actually means for your building.
+  you can see what that threshold means for your building.
 
-Turn it off when you are done; it is meant for tuning, not for everyday display.
+The line spans the map so that it can be sighted along, which also puts it in the way of
+panning. Use the **eye button** beside the bearing readout to hide it while you move the
+map, then show it again to fine-tune.
 
-#### Dragging on the live card
-
-Alignment normally belongs in the editor, because that is the only place a value can be
-written to the card's configuration. A Lovelace card cannot write its own config.
-
-Dragging the guide on the live dashboard is therefore enabled **only** when
-`facade_bearing_entity` points at an `input_number` or `number` entity, which gives the
-value somewhere durable to go: releasing the drag calls `set_value`. Without such an entity
-the guide is display-only on the card, and the editor is where you align it.
-
-Set `drag_to_align: false` to turn the interaction off even when an entity is configured.
+The guide exists only in the editor. Once saved, the card shows the map, the arrow and your
+rows, with no alignment furniture.
 
 ### `wind`
 
@@ -303,7 +298,7 @@ way the air travels, which is the reciprocal. If it is still wrong, your integra
 reporting a travel direction instead — override it with `wind.bearing_entity`.
 
 **Airflow says Sideways when it looks head-on**
-Check `house.facade_bearing` with the alignment guide (`house.show_guide: true`). The common
+Re-check `house.facade_bearing` in the editor with the alignment guide. The common
 mistake is aligning to a side wall rather than the front; the editor's Detect button and the
 building outline exist to prevent exactly that.
 

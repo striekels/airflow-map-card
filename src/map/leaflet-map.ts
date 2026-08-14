@@ -112,6 +112,17 @@ export class MapController {
   }
 
   /**
+   * Where the map is actually looking, which stops matching the configured
+   * position the moment the user pans. Anything acting on what the user can
+   * currently see has to ask this rather than trusting the config.
+   */
+  getCentre(): { lat: number; lon: number } | null {
+    if (!this.map) return null;
+    const centre = this.map.getCenter();
+    return { lat: centre.lat, lon: centre.lng };
+  }
+
+  /**
    * Outline candidate buildings on the map, labelled and clickable.
    *
    * Every returned building is drawn, not just the chosen one, so the user can

@@ -6,6 +6,44 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-15
+
+### Fixed
+
+- **Detect ignored where you had panned the map.** The picker's map is pannable, but
+  detection ran at the configured coordinates rather than the map centre, so scrolling to a
+  different street and pressing Detect silently re-analysed the original position. It now
+  reads the map centre, which is the only defensible behaviour for a control sitting under a
+  map the user can move.
+
+### Changed
+
+- **Detection now moves the card's position to the building it settled on.** This is
+  required for the fix above to make sense: detecting after panning would otherwise leave
+  the card showing one place while its facade angle described another. Clicking a different
+  building moves it too.
+
+  Between them, these turn the picker into the location picker the card has been missing:
+  pan to your house, press Detect, and both the position and the facade angle are set.
+
+- **A toggle beside the bearing readout hides the guide.** Its grab handle spans the full
+  width of the map, which is what makes the line sightable and also what puts it in the way
+  of every pan. Hiding it is quicker than fighting it.
+
+### Removed
+
+- **The alignment guide is gone from the card**, along with `house.show_guide` and
+  `house.drag_to_align`. Alignment is a setup activity: the guide belongs in the editor,
+  where the result can be saved, and a saved dashboard has no use for it. Existing configs
+  carrying either option keep working; the options are simply ignored.
+
+  This removes the whole drag-on-card path with it — around 200 lines of interaction,
+  persistence and styling, and 4 kB off the bundle. That path only ever worked when
+  `facade_bearing_entity` pointed at a settable entity, which made it a narrow feature with
+  a wide failure surface.
+
+  `facade_bearing_entity` remains, now purely as a way to read the bearing from an entity.
+
 ## [0.2.5] — 2026-08-15
 
 ### Changed
@@ -176,7 +214,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/striekels/airflow-map-card/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/striekels/airflow-map-card/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/striekels/airflow-map-card/compare/v0.2.2...v0.2.3

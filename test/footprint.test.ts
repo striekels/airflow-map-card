@@ -5,6 +5,7 @@ import {
   distanceToPolyline,
   outwardNormals,
   pointInPolygon,
+  ringCentre,
   selectBuilding,
   snapToWalls,
   toLocalMetres,
@@ -195,6 +196,36 @@ describe('selectBuilding', () => {
 
   it('returns null when there are no buildings at all', () => {
     expect(selectBuilding([], { lat: 51.05, lon: 8.27 })).toBeNull();
+  });
+});
+
+describe('ringCentre', () => {
+  it('averages the vertices', () => {
+    const centre = ringCentre([
+      { lat: 0, lon: 0 },
+      { lat: 0, lon: 2 },
+      { lat: 2, lon: 2 },
+      { lat: 2, lon: 0 },
+    ])!;
+    expect(centre.lat).toBeCloseTo(1, 9);
+    expect(centre.lon).toBeCloseTo(1, 9);
+  });
+
+  it('is unaffected by a duplicated closing point', () => {
+    const open = ringCentre(HOUSE.slice(0, -1))!;
+    const closed = ringCentre(HOUSE)!;
+    expect(closed.lat).toBeCloseTo(open.lat, 12);
+    expect(closed.lon).toBeCloseTo(open.lon, 12);
+  });
+
+  it('lands inside its own building', () => {
+    const centre = ringCentre(HOUSE)!;
+    const ring = HOUSE.map((p) => toLocalMetres(centre, p));
+    expect(pointInPolygon(ring, { x: 0, y: 0 })).toBe(true);
+  });
+
+  it('returns null for an empty ring', () => {
+    expect(ringCentre([])).toBeNull();
   });
 });
 

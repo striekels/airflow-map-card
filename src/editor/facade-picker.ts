@@ -8,6 +8,7 @@ import { renderFacadeGuide } from '../overlay/facade-guide';
 import { bearingFromDrag, normalizeAngle, pointerBearing } from '../data/bearing';
 import {
   detectFacadeBearing,
+  ringCentre,
   selectBuilding,
   snapToWalls,
   type LatLon,
@@ -58,9 +59,17 @@ export class FacadePicker extends LitElement {
   @state() private _status = '';
   @state() private _statusKind: 'info' | 'error' = 'info';
   @state() private _snapped = false;
+  /** Guide visibility, so the map can be panned without fighting the handle. */
+  @state() private _guideVisible = true;
   /** Every building the last lookup returned, so any of them can be clicked. */
   @state() private _buildings: BuildingFootprint[] = [];
   @state() private _roads: LatLon[][] = [];
+  /**
+   * The point the last lookup was run at: the map centre, not the configured
+   * position. Reused when a different building is clicked so the click and the
+   * detection reason about the same place.
+   */
+  private _point: LatLon = { lat: 0, lon: 0 };
 
   @query('.picker-map') private _mapElement?: HTMLElement;
   @query('.guide') private _guideElement?: HTMLElement;
@@ -84,22 +93,48 @@ export class FacadePicker extends LitElement {
                el.style.position before the computed style and will otherwise
                pin its own position: relative, collapsing the map to zero. -->
           <div class="picker-map" style="position: absolute"></div>
-          ${renderFacadeGuide({
-            facadeBearing: this.bearing,
-            sidewaysFrom: this.sidewaysFrom,
-            anchor: [50, 50],
-            color: 'var(--primary-color, #03a9f4)',
-            drag: {
-              active: this._dragging,
-              onPointerDown: this._onPointerDown,
-              onPointerMove: this._onPointerMove,
-              onPointerUp: this._onPointerUp,
-              onKeyDown: this._onKeyDown,
-            },
-          })}
-          <div class="readout">
-            <span class="value">${this.bearing.toFixed(1)}°</span>
-            ${this._snapped ? html`<span class="snap">snapped to wall</span>` : nothing}
+          ${
+            this._guideVisible
+              ? renderFacadeGuide({
+                  facadeBearing: this.bearing,
+                  sidewaysFrom: this.sidewaysFrom,
+                  anchor: [50, 50],
+                  color: 'var(--primary-color, #03a9f4)',
+                  drag: {
+                    active: this._dragging,
+                    onPointerDown: this._onPointerDown,
+                    onPointerMove: this._onPointerMove,
+                    onPointerUp: this._onPointerUp,
+                    onKeyDown: this._onKeyDown,
+                  },
+                })
+              : nothing
+          }
+          <div class="overlay-controls">
+            <div class="readout">
+              <span class="value">${this.bearing.toFixed(1)}°</span>
+              ${this._snapped ? html`<span class="snap">snapped to wall</span>` : nothing}
+            </div>
+            <!--
+              The guide's grab handle runs the full width of the map, so it sits
+              in the way of every pan. Hiding it is quicker than fighting it.
+            -->
+            <button
+              class="guide-toggle"
+              aria-pressed=${String(this._guideVisible)}
+              title=${
+                this._guideVisible
+                  ? 'Hide the guide to pan the map freely'
+                  : 'Show the alignment guide'
+              }
+              @click=${() => {
+                this._guideVisible = !this._guideVisible;
+              }}
+            >
+              <ha-icon
+                icon=${this._guideVisible ? 'mdi:eye-off-outline' : 'mdi:eye-outline'}
+              ></ha-icon>
+            </button>
           </div>
         </div>
 
@@ -137,8 +172,8 @@ export class FacadePicker extends LitElement {
               ? html`<strong>Click your house on the map</strong> to use its outline. `
               : nothing
           }
-          Drag the line to rotate it onto the front of the house, or use the buttons to adjust by
-          0.1°.
+          Pan the map to your house and press Detect. You can also drag the line to rotate it onto
+          the front of the house, or use the buttons to adjust by 0.1°.
         </p>
       </div>
     `;
@@ -165,7 +200,15 @@ export class FacadePicker extends LitElement {
   // ------------------------------------------------------------- detection
 
   private async _detect(): Promise<void> {
-    if (!Number.isFinite(this.latitude) || !Number.isFinite(this.longitude)) {
+    // Where the map is looking, not where the config points. The map is
+    // pannable, so those stop agreeing the moment the user drags it, and
+    // detecting somewhere other than what is on screen is indefensible.
+    const centre = this._map?.getCentre();
+    const point: LatLon = centre
+      ? { lat: centre.lat, lon: centre.lon }
+      : { lat: this.latitude, lon: this.longitude };
+
+    if (!Number.isFinite(point.lat) || !Number.isFinite(point.lon)) {
       this._fail('Set a location first.');
       return;
     }
@@ -174,20 +217,16 @@ export class FacadePicker extends LitElement {
     this._abort = new AbortController();
     this._busy = true;
     this._status = '';
+    this._point = point;
 
     try {
-      const { buildings, roads } = await fetchFootprints(
-        this.latitude,
-        this.longitude,
-        this._abort.signal,
-      );
+      const { buildings, roads } = await fetchFootprints(point.lat, point.lon, this._abort.signal);
 
       if (buildings.length === 0) {
         this._fail('No building mapped here in OpenStreetMap. Drag the line instead.');
         return;
       }
 
-      const point: LatLon = { lat: this.latitude, lon: this.longitude };
       const rings = buildings.map((b) => b.ring);
       const choice = selectBuilding(rings, point);
       if (!choice) {
@@ -228,8 +267,7 @@ export class FacadePicker extends LitElement {
 
     this._drawFootprints(index);
 
-    const point: LatLon = { lat: this.latitude, lon: this.longitude };
-    const detection = detectFacadeBearing(building.ring, this._roads, point);
+    const detection = detectFacadeBearing(building.ring, this._roads, this._point);
     if (!detection) {
       this._fail('Could not read that building outline. Drag the line instead.');
       return;
@@ -237,6 +275,17 @@ export class FacadePicker extends LitElement {
 
     this._walls = detection.walls;
     this._emit(detection.bearing);
+
+    // Move the card onto the building the bearing now describes. Without this a
+    // detection done after panning would leave the card showing one place while
+    // its facade angle described another.
+    const centre = ringCentre(building.ring);
+    if (centre) {
+      fireEvent(this, 'location-changed', {
+        latitude: Number(centre.lat.toFixed(6)),
+        longitude: Number(centre.lon.toFixed(6)),
+      });
+    }
 
     const label = describeBuilding(building) ?? 'that building';
     const facing =
@@ -456,11 +505,17 @@ export class FacadePicker extends LitElement {
       stroke-opacity: 0.35;
     }
 
-    .readout {
+    .overlay-controls {
       position: absolute;
       top: 8px;
       left: 8px;
       z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .readout {
       display: flex;
       align-items: baseline;
       gap: 6px;
@@ -478,6 +533,32 @@ export class FacadePicker extends LitElement {
     .readout .snap {
       font-size: 11px;
       color: var(--primary-color, #03a9f4);
+    }
+
+    .guide-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--airflow-surface) 85%, transparent);
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+
+    .guide-toggle[aria-pressed='true'] {
+      color: var(--primary-color, #03a9f4);
+    }
+
+    .guide-toggle:hover {
+      filter: brightness(1.15);
+    }
+
+    .guide-toggle ha-icon {
+      --mdc-icon-size: 18px;
     }
 
     .controls {

@@ -35,10 +35,6 @@ export interface LocationConfig {
 export interface HouseConfig {
   facade_bearing?: number;
   facade_bearing_entity?: string;
-  /** Draw the alignment overlay on the map. Useful while tuning the bearing. */
-  show_guide?: boolean;
-  /** Let the guide's wall line be dragged to set the bearing. Default true. */
-  drag_to_align?: boolean;
 }
 
 export interface WindConfig {

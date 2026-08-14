@@ -18,10 +18,7 @@ function config(): AirflowMapCardConfig {
     type: 'custom:airflow-map-card',
     title: 'Airflow',
     location: { latitude: 51.2194, longitude: 4.4025, zoom: 18 },
-    house: {
-      facade_bearing: Number(input('facade').value),
-      show_guide: input('guide').checked,
-    },
+    house: { facade_bearing: Number(input('facade').value) },
     wind: { entity: 'weather.home' },
     airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
     arrow: { size: 130, show_gust: input('gust').checked },
@@ -64,7 +61,7 @@ function render(): void {
   out('airflow-out').textContent = `bucket=${result.bucket} delta=${result.delta?.toFixed(1)}°`;
 }
 
-for (const id of ['bearing', 'speed', 'facade', 'dark', 'interactive', 'gust', 'guide']) {
+for (const id of ['bearing', 'speed', 'facade', 'dark', 'interactive', 'gust']) {
   input(id).addEventListener('input', render);
 }
 
