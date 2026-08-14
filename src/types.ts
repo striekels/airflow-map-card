@@ -72,9 +72,14 @@ export interface ArrowConfig {
   hide?: boolean;
 }
 
-export type TilePreset = 'osm' | 'carto-light' | 'carto-dark' | 'custom';
+export type TilePreset = 'auto' | 'osm' | 'carto-light' | 'carto-dark' | 'custom';
 
 export interface MapConfig {
+  /**
+   * Deprecated in favour of `tiles`, and still honoured while `tiles` is
+   * `auto` or unset. Two controls that could disagree about the same thing was
+   * a mistake: an explicit `tiles` silently won and left `theme` inert.
+   */
   theme?: 'auto' | 'light' | 'dark';
   tiles?: TilePreset;
   tile_url?: string;

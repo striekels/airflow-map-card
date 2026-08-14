@@ -323,25 +323,13 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             type: 'grid',
             schema: [
               {
-                name: 'theme',
-                selector: {
-                  select: {
-                    mode: 'dropdown',
-                    options: [
-                      { value: 'auto', label: 'Follow dashboard' },
-                      { value: 'light', label: 'Light' },
-                      { value: 'dark', label: 'Dark' },
-                    ],
-                  },
-                },
-              },
-              {
                 name: 'tiles',
                 selector: {
                   select: {
                     mode: 'dropdown',
                     options: [
-                      { value: 'osm', label: 'OpenStreetMap' },
+                      { value: 'auto', label: 'Follow the dashboard theme' },
+                      { value: 'osm', label: 'OpenStreetMap (light)' },
                       { value: 'carto-light', label: 'CARTO light' },
                       { value: 'carto-dark', label: 'CARTO dark' },
                     ],
@@ -381,7 +369,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       color: 'Colour (CSS)',
       show_gust: 'Show gust arrow',
       hide: 'Hide arrow',
-      theme: 'Theme',
       tiles: 'Basemap',
       interactive: 'Allow pan and zoom',
       attribution: 'Show attribution',

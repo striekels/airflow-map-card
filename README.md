@@ -233,8 +233,8 @@ no data rather than silently falling back.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `theme` | `auto` \| `light` \| `dark` | `auto` | Follows the dashboard by default. |
-| `tiles` | `osm` \| `carto-light` \| `carto-dark` | theme-dependent | |
+| `tiles` | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto` | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
+| `theme` | `auto` \| `light` \| `dark` | `auto` | Deprecated, and only consulted while `tiles` is `auto`. Use `tiles` instead. |
 | `tile_url` | string | — | Your own tile server. Overrides `tiles`. |
 | `attribution` | boolean | `true` | |
 | `interactive` | boolean | `false` | Allow pan and zoom. |

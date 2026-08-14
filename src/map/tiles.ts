@@ -11,7 +11,7 @@ export interface TileSpec {
 const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 const CARTO_ATTRIBUTION = `${OSM_ATTRIBUTION} © CARTO`;
 
-export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom'>, TileSpec> = {
+export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom' | 'auto'>, TileSpec> = {
   osm: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: OSM_ATTRIBUTION,
@@ -44,6 +44,11 @@ export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpe
   const isDark = theme === 'dark' || (theme === 'auto' && darkMode);
 
   let spec: TileSpec;
+  // 'auto' and unset both mean "follow the dashboard", which is what makes it
+  // possible to undo a basemap choice. Without that value the dropdown was a
+  // one-way door: picking a preset permanently overrode the theme.
+  const pinned = config.tiles && config.tiles !== 'custom' && config.tiles !== 'auto';
+
   if (config.tile_url) {
     spec = {
       url: config.tile_url,
@@ -51,8 +56,8 @@ export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpe
       maxZoom: 19,
       filter: 'none',
     };
-  } else if (config.tiles && config.tiles !== 'custom') {
-    spec = TILE_PRESETS[config.tiles];
+  } else if (pinned) {
+    spec = TILE_PRESETS[config.tiles as Exclude<TilePreset, 'custom' | 'auto'>];
   } else {
     spec = isDark ? TILE_PRESETS['carto-dark'] : TILE_PRESETS.osm;
   }

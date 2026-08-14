@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.3] — 2026-08-15
+
+### Fixed
+
+- **The saved card always used a light basemap, and the theme setting appeared to do
+  nothing.** `map.tiles` and `map.theme` were two controls over one outcome, and a pinned
+  `tiles` value silently overrode the theme. Selecting a basemap in the editor was also a
+  one-way door: the dropdown had no value meaning "follow the theme", so once a preset was
+  chosen the theme control was inert with no way back.
+
+  `tiles` now accepts `auto`, which is the default and means follow the dashboard, and the
+  editor offers it as the first option. The two dropdowns are collapsed into one: `theme` is
+  deprecated, still honoured while `tiles` is `auto`, and no longer shown in the editor.
+
+  If your card is stuck light, set the basemap to **Follow the dashboard theme**.
+
+### Notes
+
+`src/map/tiles.ts` had no tests despite deciding what every user sees. It has seven now,
+including one pinning the interaction that caused this.
+
 ## [0.3.2] — 2026-08-15
 
 ### Added
@@ -243,7 +264,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.2...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/striekels/airflow-map-card/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/striekels/airflow-map-card/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...v0.3.0
