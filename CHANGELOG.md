@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-08-15
+
+### Added
+
+- **A light/dark toggle for the editor's map.** It followed the Home Assistant theme with no
+  way to override it, but a dark dashboard does not make a dark basemap the easier one to
+  align a roofline against. The toggle swaps the tile layer outright rather than filtering
+  it, and affects the editor only: the card's own basemap is still set by `map.theme` and
+  `map.tiles`.
+
 ## [0.3.1] — 2026-08-15
 
 ### Fixed
@@ -233,7 +243,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.1...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/striekels/airflow-map-card/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...v0.3.0
 [0.2.5]: https://github.com/striekels/airflow-map-card/compare/v0.2.4...v0.2.5

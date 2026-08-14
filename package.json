@@ -1,6 +1,6 @@
 {
   "name": "airflow-map-card",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Home Assistant Lovelace card showing wind direction over your house on an OpenStreetMap basemap.",
   "type": "module",
   "license": "MIT",

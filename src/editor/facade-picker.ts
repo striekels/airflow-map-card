@@ -61,6 +61,12 @@ export class FacadePicker extends LitElement {
   @state() private _snapped = false;
   /** Guide visibility, so the map can be panned without fighting the handle. */
   @state() private _guideVisible = true;
+  /**
+   * Basemap override for this editing session. Undefined follows Home
+   * Assistant. A dark dashboard does not mean a dark basemap is the easier one
+   * to align against, so this is worth being able to flip by hand.
+   */
+  @state() private _dark?: boolean;
   /** Every building the last lookup returned, so any of them can be clicked. */
   @state() private _buildings: BuildingFootprint[] = [];
   @state() private _roads: LatLon[][] = [];
@@ -135,6 +141,20 @@ export class FacadePicker extends LitElement {
                 icon=${this._guideVisible ? 'mdi:eye-off-outline' : 'mdi:eye-outline'}
               ></ha-icon>
             </button>
+            <!--
+              Affects this map only, not the saved card. Roof outlines read
+              very differently on a light and a dark basemap, so being able to
+              flip it while aligning is worth more than matching the dashboard.
+            -->
+            <button
+              class="guide-toggle"
+              title=${this._darkMap ? 'Use a light map here' : 'Use a dark map here'}
+              @click=${() => {
+                this._dark = !this._darkMap;
+              }}
+            >
+              <ha-icon icon=${this._darkMap ? 'mdi:weather-sunny' : 'mdi:weather-night'}></ha-icon>
+            </button>
           </div>
         </div>
 
@@ -190,11 +210,16 @@ export class FacadePicker extends LitElement {
       // point is slightly off.
       interactive: true,
       attribution: true,
-      tiles: resolveTiles({ theme: 'auto' }, !!this.hass.themes?.darkMode),
+      tiles: resolveTiles({ theme: this._darkMap ? 'dark' : 'light' }, this._darkMap),
     };
 
     if (!this._map) this._map = new MapController(this._mapElement);
     this._map.init(options);
+  }
+
+  /** Session override if set, otherwise whatever Home Assistant is using. */
+  private get _darkMap(): boolean {
+    return this._dark ?? !!this.hass?.themes?.darkMode;
   }
 
   // ------------------------------------------------------------- detection
