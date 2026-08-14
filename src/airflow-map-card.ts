@@ -822,7 +822,7 @@ window.customCards.push({
   name: 'Airflow Map Card',
   description: 'Wind direction over your house on an OpenStreetMap basemap.',
   preview: true,
-  documentationURL: 'https://github.com/your-org/airflow-map-card',
+  documentationURL: 'https://github.com/striekels/airflow-map-card',
 });
 
 /* eslint-disable no-console */

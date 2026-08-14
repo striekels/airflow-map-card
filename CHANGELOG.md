@@ -106,5 +106,10 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/your-org/airflow-map-card/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/airflow-map-card/releases/tag/v0.1.0
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/striekels/airflow-map-card/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/striekels/airflow-map-card/compare/v0.1.3...v0.2.0
+[0.1.3]: https://github.com/striekels/airflow-map-card/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/striekels/airflow-map-card/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/striekels/airflow-map-card/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/striekels/airflow-map-card/releases/tag/v0.1.0

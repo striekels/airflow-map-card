@@ -217,11 +217,16 @@ silently drop a whole section.
 
 ## 4. Distribution
 
-- Push to GitHub. `documentationURL` in the card registration and the CHANGELOG compare
-  links still say `your-org`.
+- **Decide before making the repository public.** `test/footprint.test.ts` and
+  `dev/picker.html` carry the author's real home coordinates, and the fixture comment names
+  the street and house number. That fixture is the most valuable test in the suite precisely
+  because it is real geometry that caught a real bug, so deleting it costs something.
+  Shifting the fixture in longitude while holding latitude constant would preserve every
+  computed angle exactly — the local projection scales longitude by `cos(latitude)` and
+  nothing else — while no longer pointing at a home address. Moot while the repo is private.
 - Screenshots in the README (light, dark, guide-on). HACS renders the README as the store
   page, so this is the product page.
-- Tag `v0.1.1` and confirm the release workflow's version-consistency check actually fires.
+- Tag `v0.2.1` and confirm the release workflow's version-consistency check actually fires.
 - Submit to the HACS default repository once it has been running for a while.
 - Add `info.md` for the HACS install panel.
 
