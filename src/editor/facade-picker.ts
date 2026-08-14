@@ -323,6 +323,16 @@ export class FacadePicker extends LitElement {
   static override styles = css`
     ${unsafeCSS(leafletCss)}
 
+    :host {
+      /*
+       * Declared here as well as on the card: custom properties inherit down the
+       * DOM, but the editor is a sibling tree rather than a descendant of the
+       * card, so it does not pick up the card's definition. See the note there
+       * for why both theme variables have to be tried.
+       */
+      --airflow-surface: var(--ha-card-background, var(--card-background-color, #fff));
+    }
+
     .picker {
       display: flex;
       flex-direction: column;
@@ -384,8 +394,8 @@ export class FacadePicker extends LitElement {
       font-weight: 500;
       opacity: 0.6;
       text-shadow:
-        0 0 3px var(--ha-card-background, #fff),
-        0 0 3px var(--ha-card-background, #fff);
+        0 0 3px var(--airflow-surface),
+        0 0 3px var(--airflow-surface);
     }
 
     .building-label.selected {
@@ -440,7 +450,7 @@ export class FacadePicker extends LitElement {
       gap: 6px;
       padding: 4px 10px;
       border-radius: 14px;
-      background: color-mix(in srgb, var(--ha-card-background, #fff) 85%, transparent);
+      background: color-mix(in srgb, var(--airflow-surface) 85%, transparent);
       font-size: 13px;
     }
 

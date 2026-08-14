@@ -541,6 +541,15 @@ export class AirflowMapCard extends LitElement {
 
     :host {
       display: block;
+
+      /*
+       * Home Assistant themes are inconsistent about which of these they set.
+       * Reading only --ha-card-background means a theme that defines just
+       * --card-background-color falls straight through to the literal, giving a
+       * white pill with light text on a dark dashboard. Chain both before any
+       * hard-coded colour, and never hard-code one outside this declaration.
+       */
+      --airflow-surface: var(--ha-card-background, var(--card-background-color, #fff));
     }
 
     ha-card {
@@ -614,7 +623,7 @@ export class AirflowMapCard extends LitElement {
 
     /* Leaflet hardcodes a white attribution bar, which glares on a dark map. */
     .leaflet-control-attribution {
-      background: color-mix(in srgb, var(--ha-card-background, #fff) 75%, transparent);
+      background: color-mix(in srgb, var(--airflow-surface) 75%, transparent);
       color: var(--secondary-text-color);
       font-size: 10px;
     }
@@ -699,7 +708,7 @@ export class AirflowMapCard extends LitElement {
       padding: 4px 10px;
       border: none;
       border-radius: 14px;
-      background: color-mix(in srgb, var(--ha-card-background, #fff) 85%, transparent);
+      background: color-mix(in srgb, var(--airflow-surface) 85%, transparent);
       color: var(--primary-text-color);
       font: inherit;
       font-size: 13px;
