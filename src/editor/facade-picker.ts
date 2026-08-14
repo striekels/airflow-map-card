@@ -70,7 +70,10 @@ export class FacadePicker extends LitElement {
     return html`
       <div class="picker">
         <div class="map-frame">
-          <div class="picker-map"></div>
+          <!-- Inline position for the same reason as the card: Leaflet reads
+               el.style.position before the computed style and will otherwise
+               pin its own position: relative, collapsing the map to zero. -->
+          <div class="picker-map" style="position: absolute"></div>
           ${renderFacadeGuide({
             facadeBearing: this.bearing,
             sidewaysFrom: this.sidewaysFrom,
@@ -91,9 +94,9 @@ export class FacadePicker extends LitElement {
         </div>
 
         <div class="controls">
-          <mwc-button raised .disabled=${this._busy} @click=${this._detect}>
+          <button class="primary" ?disabled=${this._busy} @click=${this._detect}>
             ${this._busy ? 'Looking up…' : 'Detect from OpenStreetMap'}
-          </mwc-button>
+          </button>
           <button class="nudge" title="Rotate anticlockwise" @click=${() => this._nudge(-1)}>
             <ha-icon icon="mdi:rotate-left"></ha-icon>
           </button>
@@ -340,8 +343,9 @@ export class FacadePicker extends LitElement {
       padding-top: 75%;
     }
 
+    /* !important for the same reason as the card: see the note there. */
     .picker-map {
-      position: absolute;
+      position: absolute !important;
       inset: 0;
       z-index: 0;
     }
@@ -455,6 +459,31 @@ export class FacadePicker extends LitElement {
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    /*
+     * A native button, not mwc-button. Home Assistant is retiring the Material
+     * Web Components; where mwc-button is no longer registered it renders as
+     * unstyled inline text that does not look clickable at all.
+     */
+    .primary {
+      background: var(--primary-color, #03a9f4);
+      color: var(--text-primary-color, #fff);
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .primary:disabled {
+      opacity: 0.55;
+      cursor: default;
     }
 
     .nudge {

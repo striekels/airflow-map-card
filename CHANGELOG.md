@@ -6,6 +6,31 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-08-14
+
+### Fixed
+
+- **The map never rendered inside Home Assistant.** Leaflet reads its container's computed
+  position on init and, seeing `static`, pins `position: relative` as an inline style. It
+  reads `static` whenever the card first renders while still detached from the document,
+  which is what Home Assistant's card pipeline does. Under `position: relative` the
+  container's `inset: 0` stretches nothing, so the map collapsed to zero height and looked
+  identical to a map that had failed to load.
+
+  The container's position is now declared `!important` — the only thing that outranks a
+  third-party inline style — and also set inline, since Leaflet checks `el.style.position`
+  before the computed value and leaves an already-positioned element alone.
+
+  The earlier 0.1.1 fix, which replaced `aspect-ratio` with a padding spacer, addressed a
+  real robustness problem in the wrapper but was not the cause of the blank map. The
+  wrapper had been sizing correctly all along.
+
+- **Editor buttons rendered as plain text.** Home Assistant is retiring the Material Web
+  Components; where `mwc-button` is no longer registered it falls back to unstyled inline
+  text, so "Detect from OpenStreetMap", "Search", "Use home" and "Add row" did not look
+  clickable. All four are now native buttons styled from Home Assistant theme variables,
+  with no dependency on frontend internals.
+
 ## [0.2.1] — 2026-08-11
 
 ### Added
@@ -106,7 +131,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/striekels/airflow-map-card/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/striekels/airflow-map-card/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/striekels/airflow-map-card/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/striekels/airflow-map-card/compare/v0.1.2...v0.1.3

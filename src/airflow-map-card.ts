@@ -202,7 +202,10 @@ export class AirflowMapCard extends LitElement {
               : { '--airflow-map-ratio': aspectRatioPadding(mapConfig.aspect_ratio) },
           )}
         >
-          <div class="map" style=${styleMap({ filter: tiles.filter })}></div>
+          <!-- position is set inline deliberately: Leaflet reads el.style.position
+               before the computed style, so this stops it pinning its own
+               position: relative when the card renders while detached. -->
+          <div class="map" style=${styleMap({ position: 'absolute', filter: tiles.filter })}></div>
           ${
             this._config.house?.show_guide
               ? renderFacadeGuide({
@@ -582,8 +585,23 @@ export class AirflowMapCard extends LitElement {
       display: none;
     }
 
+    /*
+     * The !important is load-bearing, not laziness.
+     *
+     * Leaflet reads the container's computed position on init and, seeing
+     * static, pins position: relative as an INLINE style. It reads static
+     * whenever the card first renders while detached from the document, which
+     * is what Home Assistant's card pipeline does. Under position: relative,
+     * inset: 0 stretches nothing and the map silently collapses to zero height,
+     * which looks exactly like a map that failed to load.
+     *
+     * An author !important declaration is the only thing that outranks a
+     * third-party inline style. Percentage sizing is not an alternative here:
+     * the wrapper's height comes from a padding spacer so its specified height
+     * is auto, against which height: 100% also resolves to zero.
+     */
     .map {
-      position: absolute;
+      position: absolute !important;
       inset: 0;
       z-index: 0;
     }

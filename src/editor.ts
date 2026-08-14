@@ -66,13 +66,14 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
               }
             }}
           ></ha-textfield>
-          <mwc-button
-            .disabled=${this._geocoding || this._addressQuery.trim() === ''}
+          <button
+            class="primary"
+            ?disabled=${this._geocoding || this._addressQuery.trim() === ''}
             @click=${this._searchAddress}
           >
             ${this._geocoding ? 'Searching…' : 'Search'}
-          </mwc-button>
-          <mwc-button @click=${this._useHomeLocation}>Use home</mwc-button>
+          </button>
+          <button class="secondary" @click=${this._useHomeLocation}>Use home</button>
         </div>
         ${
           this._geocodeError
@@ -398,7 +399,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             : nothing
         }
         ${rows.map((row, index) => this._renderRowEditor(row, index, rows.length))}
-        <mwc-button outlined @click=${this._addRow}>Add row</mwc-button>
+        <button class="secondary" @click=${this._addRow}>Add row</button>
       </div>
     `;
   }
@@ -525,6 +526,43 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       margin: 0;
       font-size: 12px;
       color: var(--secondary-text-color);
+    }
+
+    /*
+     * Native buttons rather than mwc-button. Home Assistant is retiring the
+     * Material Web Components, and where mwc-button is not registered it falls
+     * back to unstyled inline text that does not read as clickable at all.
+     */
+    .primary,
+    .secondary {
+      border-radius: 4px;
+      padding: 8px 16px;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--primary-color, #03a9f4);
+      color: var(--text-primary-color, #fff);
+      border: none;
+    }
+
+    .secondary {
+      background: none;
+      color: var(--primary-color, #03a9f4);
+      border: 1px solid var(--divider-color);
+    }
+
+    .primary:hover:not(:disabled),
+    .secondary:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .primary:disabled,
+    .secondary:disabled {
+      opacity: 0.55;
+      cursor: default;
     }
 
     .row-editor {
