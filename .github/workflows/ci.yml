@@ -4,14 +4,15 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -30,15 +31,23 @@ jobs:
       - name: Build
         run: node scripts/build.mjs
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: airflow-map-card
           path: dist/airflow-map-card.js
 
+  # Run on demand only. HACS looks for the built plugin in the repository root,
+  # in dist/, or in a release; dist/ is deliberately not committed and releases
+  # are cut by tag, so on an ordinary push there is nothing for it to validate
+  # and it fails structurally. A permanently red CI teaches people to ignore it.
+  #
+  # Run this manually before submitting to the HACS default repository, and
+  # after cutting a release.
   hacs:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: hacs/action@main
         with:
           category: plugin
