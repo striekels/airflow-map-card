@@ -1,22 +1,56 @@
 # Airflow Map Card
 
-A Home Assistant Lovelace card that draws your house on an OpenStreetMap basemap and
-shows which way the wind is blowing across it — plus a configurable row of readings
-underneath.
+A Home Assistant Lovelace card that draws your house on an OpenStreetMap basemap and shows
+which way the wind is blowing across it, then tells you whether that airflow runs front to
+back, back to front, or merely sideways.
 
 Replaces the usual `picture-elements` + static PNG + `card_mod` approach: the map is live,
-so it stays sharp at any zoom and needs no regenerating when you change the position.
+so it stays sharp at any zoom and needs no regenerating when you move or re-frame it.
 
----
+> [!WARNING]
+> **Work in progress.** This is pre-1.0 and under active development. It works, it is tested,
+> and it runs on the author's own dashboard, but:
+>
+> - The configuration format may change without a migration path until 1.0.
+> - It has been exercised against exactly one Home Assistant instance and one weather
+>   integration. Expect rough edges with other setups.
+> - There is no automated coverage of the visual editor, and none of how the card behaves in
+>   Home Assistant's own layouts. Both gaps have already produced one shipped bug each.
+> - Known issues and planned work are tracked openly in [BACKLOG.md](BACKLOG.md).
+>
+> Bug reports are welcome; please include your Home Assistant version, the card version from
+> the browser console, and the card's YAML.
+
+## What it does
+
+- **Live map** of your house from OpenStreetMap or CARTO tiles, following your dashboard's
+  light or dark theme.
+- **Wind arrow** driven by any `weather` entity, pointing the way the air actually travels.
+- **Airflow verdict** — front to back, back to front, sideways, or too weak to matter —
+  computed from the wind bearing and the way your house faces.
+- **One-click facade alignment**: the editor reads your building's outline from
+  OpenStreetMap, works out which wall faces the street, and sets the angle for you. Click a
+  neighbouring house if it guessed wrong.
+- **Configurable readouts** underneath: built-in values, any entity or attribute, or Jinja
+  templates.
+
+## Requirements
+
+- Home Assistant **2024.11** or newer (the card uses the sections-layout grid API).
+- A `weather` entity that reports `wind_bearing` and `wind_speed`, or sensors that do.
+- Browser access to a tile server. The defaults are the public OpenStreetMap and CARTO
+  endpoints; see [Attribution and fair use](#attribution-and-fair-use).
 
 ## Install
 
 ### HACS (custom repository)
 
-1. HACS → Frontend → ⋮ → **Custom repositories**
-2. Add this repository's URL, category **Dashboard** (older HACS calls it **Lovelace**/**Plugin**)
+1. HACS → ⋮ → **Custom repositories**
+2. Add this repository's URL with category **Dashboard** (older HACS calls it
+   **Lovelace** or **Plugin**)
 3. Install **Airflow Map Card**
-4. Reload your browser
+4. Hard-refresh your browser (Ctrl+Shift+R). A normal reload will not pick up a newly
+   registered resource.
 
 ### Manual
 
@@ -26,6 +60,9 @@ Settings → Dashboards → ⋮ → **Resources** as a **JavaScript module**:
 ```
 /local/airflow-map-card.js
 ```
+
+If you are updating a manually installed copy, append a version query so the browser cannot
+serve you a cached build: `/local/airflow-map-card.js?v=0.2.1`.
 
 ## Quick start
 
@@ -242,6 +279,34 @@ tile server.
 Address search uses OpenStreetMap's Nominatim service, one request per search, from the
 editor only.
 
+## Troubleshooting
+
+**"Custom element doesn't exist: airflow-map-card"**
+The resource did not load. Check the file is at `config/www/airflow-map-card.js`, that the
+resource is registered as a **JavaScript module** and not "JavaScript file", and hard-refresh.
+
+**The card renders but the map area is blank**
+Almost always the map container having no height. The card reports map failures on its own
+face, so if it says nothing, open the browser console. Setting `map.height` to a fixed pixel
+value is a quick way to confirm.
+
+**The arrow points the opposite way to what I expect**
+`wind_bearing` in Home Assistant is the direction the wind comes *from*; the arrow points the
+way the air travels, which is the reciprocal. If it is still wrong, your integration may be
+reporting a travel direction instead — override it with `wind.bearing_entity`.
+
+**Airflow says Sideways when it looks head-on**
+Check `house.facade_bearing` with the alignment guide (`house.show_guide: true`). The common
+mistake is aligning to a side wall rather than the front; the editor's Detect button and the
+building outline exist to prevent exactly that.
+
+**Detect says "No building mapped here"**
+Your building may not be in OpenStreetMap, or may be mapped as a relation rather than a way,
+which is a [known gap](BACKLOG.md). Drag the guide line instead.
+
+**Detect says OpenStreetMap is busy**
+Overpass rate-limits aggressively. Wait a minute and try again.
+
 ## Development
 
 ```bash
@@ -249,14 +314,42 @@ npm install
 npm run dev
 ```
 
-The dev harness at `http://localhost:5173` runs the card against a mock `hass` object with
-sliders for wind bearing, speed and facade orientation — no Home Assistant instance needed.
+Two harnesses run against a mock `hass` object, with no Home Assistant instance needed:
+
+- `http://localhost:5173` — the card, with sliders for wind bearing, speed and facade
+  orientation.
+- `http://localhost:5173/picker.html` — the editor's facade picker, including live
+  OpenStreetMap detection.
 
 ```bash
-npm test          # unit tests for the compass and airflow logic
+npm test          # unit tests: compass maths, airflow, rows, footprint geometry
+npm run lint
 npm run build     # produces dist/airflow-map-card.js
 ```
 
+The build uses esbuild directly rather than Vite's library mode, which does not minify here;
+see `scripts/build.mjs`. Vite is used only for the dev server.
+
+`CLAUDE.md` describes the architecture and the conventions worth knowing before changing
+anything.
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR:
+
+- `npm test`, `npm run lint` and `npm run build` should all pass.
+- Keep compass and geometry maths in `src/data/bearing.ts` and `src/data/footprint.ts`, and
+  add tests there. Sign errors in this domain produce plausible-looking wrong answers rather
+  than obvious failures, which is why that code is isolated and heavily tested.
+- Follow Conventional Commits.
+
+## Credits
+
+Basemaps © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and
+[CARTO](https://carto.com/attributions). Geocoding by
+[Nominatim](https://nominatim.org/); building outlines via the
+[Overpass API](https://overpass-api.de/). Mapping by [Leaflet](https://leafletjs.com/).
+
 ## License
 
-MIT
+[MIT](LICENSE)

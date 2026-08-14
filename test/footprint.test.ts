@@ -12,29 +12,36 @@ import {
 } from '../src/data/footprint';
 
 /**
- * Real OpenStreetMap geometry for a semi-detached house, way 1290424365,
- * "Panisdries 55". Kept as a fixture because synthetic squares cannot show
- * whether the detection survives a real footprint: this one has six walls of
- * very different lengths, including a 1.4 m step in the side wall that a naive
- * "longest wall" heuristic would trip over.
+ * Real OpenStreetMap geometry for a semi-detached house, with its longitude
+ * shifted so the fixture does not identify anyone's home.
+ *
+ * The shift is longitude-only and applied equally to the house, the street and
+ * the reference point. `toLocalMetres` scales longitude by `cos(latitude)` and
+ * nothing else, so with the latitude untouched every distance, wall normal and
+ * derived bearing is numerically identical to the original location.
+ *
+ * Kept as real geometry because synthetic squares cannot show whether detection
+ * survives an actual footprint: this one has six walls of very different
+ * lengths, including a 1.4 m step in the side wall that a naive "longest wall"
+ * heuristic trips over.
  */
 const HOUSE: LatLon[] = [
-  { lat: 51.059439, lon: 5.278447 },
-  { lat: 51.0594525, lon: 5.2785385 },
-  { lat: 51.0593619, lon: 5.2785708 },
-  { lat: 51.0593577, lon: 5.278542 },
-  { lat: 51.0593453, lon: 5.278547 },
-  { lat: 51.0593363, lon: 5.2784851 },
-  { lat: 51.059439, lon: 5.278447 },
+  { lat: 51.059439, lon: 8.278447 },
+  { lat: 51.0594525, lon: 8.2785385 },
+  { lat: 51.0593619, lon: 8.2785708 },
+  { lat: 51.0593577, lon: 8.278542 },
+  { lat: 51.0593453, lon: 8.278547 },
+  { lat: 51.0593363, lon: 8.2784851 },
+  { lat: 51.059439, lon: 8.278447 },
 ];
 
-/** The nearest segment of Panisdries, OSM way 979831196. */
+/** The nearest segment of the residential street the house is addressed to. */
 const STREET: LatLon[] = [
-  { lat: 51.059198, lon: 5.2782569 },
-  { lat: 51.0592739, lon: 5.2787399 },
+  { lat: 51.059198, lon: 8.2782569 },
+  { lat: 51.0592739, lon: 8.2787399 },
 ];
 
-const HOME: LatLon = { lat: 51.059365, lon: 5.278536 };
+const HOME: LatLon = { lat: 51.059365, lon: 8.278536 };
 
 const square: LatLon[] = [
   { lat: 0, lon: 0 },
@@ -166,11 +173,11 @@ describe('selectBuilding', () => {
     // the whole block: observed live, where it produced a wall angle that did
     // not exist on this building at all.
     const terrace: LatLon[] = [
-      { lat: 51.0592, lon: 5.2781 },
-      { lat: 51.0596, lon: 5.2781 },
-      { lat: 51.0596, lon: 5.2789 },
-      { lat: 51.0592, lon: 5.2789 },
-      { lat: 51.0592, lon: 5.2781 },
+      { lat: 51.0592, lon: 8.2781 },
+      { lat: 51.0596, lon: 8.2781 },
+      { lat: 51.0596, lon: 8.2789 },
+      { lat: 51.0592, lon: 8.2789 },
+      { lat: 51.0592, lon: 8.2781 },
     ];
     expect(selectBuilding([terrace, HOUSE], HOME)!.building).toBe(HOUSE);
     expect(selectBuilding([HOUSE, terrace], HOME)!.building).toBe(HOUSE);
@@ -179,7 +186,7 @@ describe('selectBuilding', () => {
   it('flags a fallback to the nearest building instead of hiding it', () => {
     // A borrowed footprint from the house next door yields a plausible-looking
     // angle that is simply wrong, so the caller has to be able to say so.
-    const outside: LatLon = { lat: 51.05, lon: 5.27 };
+    const outside: LatLon = { lat: 51.05, lon: 8.27 };
     const choice = selectBuilding([HOUSE], outside)!;
     expect(choice.building).toBe(HOUSE);
     expect(choice.contained).toBe(false);
@@ -187,7 +194,7 @@ describe('selectBuilding', () => {
   });
 
   it('returns null when there are no buildings at all', () => {
-    expect(selectBuilding([], { lat: 51.05, lon: 5.27 })).toBeNull();
+    expect(selectBuilding([], { lat: 51.05, lon: 8.27 })).toBeNull();
   });
 });
 
@@ -226,8 +233,8 @@ describe('detectFacadeBearing', () => {
 
   it('follows the street when the street moves to the other side', () => {
     const behind: LatLon[] = [
-      { lat: 51.0597, lon: 5.2782 },
-      { lat: 51.0597, lon: 5.2788 },
+      { lat: 51.0597, lon: 8.2782 },
+      { lat: 51.0597, lon: 8.2788 },
     ];
     const detection = detectFacadeBearing(HOUSE, [behind], HOME)!;
     // Now the nearest road is north of the house, so the front flips.

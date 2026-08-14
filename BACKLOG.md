@@ -9,11 +9,14 @@ value-per-effort. Items marked **bug** are defects in shipped behaviour, not wis
 
 Reassessed after the 0.2.x alignment work. These displace the older items below.
 
-### 0.1 Commit the repository — **do this first**
+### 0.1 Commit the repository — **done**
 
-`git log` reports no commits at all: 42 staged files, 8 untracked, everything living in the
-working tree and index. Every line written so far survives only as long as this directory
-does. Nothing else on this list matters if that is lost.
+Committed and pushed to `striekels/airflow-map-card`, currently private. CI passes on a
+clean checkout, which is the first confirmation the project builds off this machine.
+
+Still to do before the repository goes public: nothing blocking — the test fixture has been
+sanitised (see Distribution) — but the HACS validation job needs a release to validate
+against, so tag `v0.2.1` before running it.
 
 ### 0.2 Match the road by `addr:street`, not just proximity — **bug in waiting**
 
@@ -108,7 +111,7 @@ Changes:
 ### 1.0 Detect the facade automatically — **done in 0.2.0**
 
 The editor reads the building outline from OpenStreetMap, picks the wall facing the nearest
-street, and writes `facade_bearing`. Verified against way 1290424365 ("Panisdries 55"):
+street, and writes `facade_bearing`. Verified against a real semi-detached house:
 detection returns 166.97° where the owner had hand-tuned 166.52°. The outline is drawn on
 the editor map, and a dragged guide snaps to wall normals within 8°.
 
@@ -217,13 +220,11 @@ silently drop a whole section.
 
 ## 4. Distribution
 
-- **Decide before making the repository public.** `test/footprint.test.ts` and
-  `dev/picker.html` carry the author's real home coordinates, and the fixture comment names
-  the street and house number. That fixture is the most valuable test in the suite precisely
-  because it is real geometry that caught a real bug, so deleting it costs something.
-  Shifting the fixture in longitude while holding latitude constant would preserve every
-  computed angle exactly — the local projection scales longitude by `cos(latitude)` and
-  nothing else — while no longer pointing at a home address. Moot while the repo is private.
+- **Test fixture sanitised** — done. `test/footprint.test.ts` and `dev/picker.html` no longer
+  carry a real home location. The fixture's longitude was shifted uniformly with the latitude
+  held constant: the local projection scales longitude by `cos(latitude)` and nothing else, so
+  detection still returns 166.9747553 and every wall normal is identical to six decimals.
+  Preserve that property if the fixture is ever regenerated.
 - Screenshots in the README (light, dark, guide-on). HACS renders the README as the store
   page, so this is the product page.
 - Tag `v0.2.1` and confirm the release workflow's version-consistency check actually fires.

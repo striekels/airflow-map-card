@@ -93,7 +93,7 @@ export function parseFootprints(elements: OverpassWay[]): FootprintQueryResult {
   return { buildings, roads };
 }
 
-/** Human-readable label for a detected building, e.g. "Panisdries 55". */
+/** Human-readable label for a detected building, e.g. "Mill Lane 55". */
 export function describeBuilding(building: BuildingFootprint | undefined): string | undefined {
   const address = building?.address;
   if (!address) return undefined;
