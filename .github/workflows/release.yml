@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify the tag matches the version in the source
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          SRC=$(node -p "require('./package.json').version")
+          CONST=$(grep -oP "CARD_VERSION = '\K[^']+" src/const.ts)
+          echo "tag=$TAG package.json=$SRC const.ts=$CONST"
+          if [ "$TAG" != "$SRC" ] || [ "$TAG" != "$CONST" ]; then
+            echo "::error::Version mismatch between the tag, package.json and src/const.ts"
+            exit 1
+          fi
+
+      - run: npm test
+      - run: node scripts/build.mjs
+
+      # HACS downloads this asset directly; the filename must stay stable.
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/airflow-map-card.js
+          generate_release_notes: true

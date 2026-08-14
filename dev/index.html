@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>airflow-map-card — dev harness</title>
+    <style>
+      :root {
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --secondary-background-color: #e5e5e5;
+        --divider-color: rgba(0, 0, 0, 0.12);
+        --ha-card-background: #fff;
+        --ha-card-border-radius: 12px;
+        --error-color: #db4437;
+        --warning-color: #ffa726;
+        --state-icon-color: #44739e;
+        color-scheme: light;
+      }
+
+      body.dark {
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b;
+        --secondary-background-color: #202124;
+        --divider-color: rgba(255, 255, 255, 0.12);
+        --ha-card-background: #1c1c1c;
+        color-scheme: dark;
+        background: #111;
+      }
+
+      body {
+        font-family: Roboto, system-ui, sans-serif;
+        margin: 0;
+        padding: 24px;
+        background: #f2f2f2;
+        color: var(--primary-text-color);
+      }
+
+      body.dark {
+        background: #111;
+      }
+
+      /* Stand-in for HA's own <ha-card>, which is not available here. */
+      ha-card {
+        display: block;
+        background: var(--ha-card-background);
+        border-radius: var(--ha-card-border-radius);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      }
+
+      .layout {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .card-column {
+        width: 420px;
+        max-width: 100%;
+      }
+
+      .controls {
+        background: var(--ha-card-background);
+        border-radius: 12px;
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+        width: 320px;
+      }
+
+      .controls label {
+        display: grid;
+        gap: 4px;
+        font-size: 13px;
+      }
+
+      .readout {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>airflow-map-card — dev harness</h2>
+    <div class="layout">
+      <div class="card-column"><div id="card-host"></div></div>
+      <div class="controls">
+        <label>
+          Wind bearing (from): <span class="readout" id="bearing-out">45°</span>
+          <input id="bearing" type="range" min="0" max="359" value="45" />
+        </label>
+        <label>
+          Wind speed: <span class="readout" id="speed-out">10 km/h</span>
+          <input id="speed" type="range" min="0" max="60" step="0.5" value="10" />
+        </label>
+        <label>
+          Facade bearing (front of house faces):
+          <span class="readout" id="facade-out">45°</span>
+          <input id="facade" type="range" min="0" max="359" value="45" />
+        </label>
+        <label><input id="dark" type="checkbox" /> Dark mode</label>
+        <label><input id="interactive" type="checkbox" /> Interactive map</label>
+        <label><input id="gust" type="checkbox" /> Show gust arrow</label>
+        <label><input id="guide" type="checkbox" checked /> Show facade guide</label>
+        <div class="readout" id="airflow-out"></div>
+      </div>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

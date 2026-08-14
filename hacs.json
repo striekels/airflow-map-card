@@ -1,0 +1,6 @@
+{
+  "name": "Airflow Map Card",
+  "render_readme": true,
+  "filename": "airflow-map-card.js",
+  "homeassistant": "2024.11.0"
+}
