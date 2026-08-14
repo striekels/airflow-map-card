@@ -15,6 +15,48 @@ export class OverpassError extends Error {}
 
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 
+/**
+ * Backoff between attempts, in milliseconds.
+ *
+ * The public endpoint is intermittently overloaded rather than down: a request
+ * that returns 504 often succeeds a few seconds later, which was measured
+ * directly while building this. Retrying is therefore worth far more than a
+ * mirror list.
+ *
+ * No mirrors are shipped, deliberately. The obvious candidates were tested and
+ * rejected: overpass.osm.ch only carries Switzerland (five buildings for Zurich,
+ * zero for Brussels), and two others were unreachable. An unverified endpoint is
+ * worse than retrying one known to work.
+ */
+const BACKOFF_MS = [1200, 3000];
+
+/** Successful results, so pressing Detect again costs the service nothing. */
+const cache = new Map<string, FootprintQueryResult>();
+
+/** About a metre of precision, far finer than any building. */
+function cacheKey(lat: number, lon: number): string {
+  return `${lat.toFixed(5)},${lon.toFixed(5)}`;
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
+  });
+}
+
+/** Overload and rate-limit responses, which are worth retrying. */
+function isTransient(status: number): boolean {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
 interface OverpassWay {
   id: number;
   tags?: Record<string, string>;
@@ -25,47 +67,68 @@ interface OverpassWay {
  * Fetch building footprints and nearby roads around a point.
  *
  * Editor-only and button-triggered, never called while the card is running.
- * Overpass is a donated public service with a strict fair-use policy; one
- * request per button press, whose result is written into the card config as a
- * single number, stays well inside it.
- *
- * Buildings and roads come back in one query rather than two, halving the load
- * on the endpoint.
+ * Overpass is a donated public service with a strict fair-use policy. One
+ * request per button press, cached afterwards and reduced to a single number in
+ * the card config, stays well inside it; buildings and roads come back in one
+ * query rather than two for the same reason.
  */
 export async function fetchFootprints(
   lat: number,
   lon: number,
   signal?: AbortSignal,
 ): Promise<FootprintQueryResult> {
+  const key = cacheKey(lat, lon);
+  const hit = cache.get(key);
+  if (hit) return hit;
+
   const query = `[out:json][timeout:25];(way(around:30,${lat},${lon})["building"];way(around:80,${lat},${lon})["highway"];);out geom;`;
+  let lastError: OverpassError | undefined;
 
-  let response: Response;
-  try {
-    response = await fetch(ENDPOINT, {
-      method: 'POST',
-      body: new URLSearchParams({ data: query }),
-      signal,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    throw new OverpassError('Could not reach OpenStreetMap.');
+  for (let attempt = 0; attempt <= BACKOFF_MS.length; attempt++) {
+    if (attempt > 0) await sleep(BACKOFF_MS[attempt - 1], signal);
+
+    let response: Response;
+    try {
+      response = await fetch(ENDPOINT, {
+        method: 'POST',
+        body: new URLSearchParams({ data: query }),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      // A thrown fetch is a network-level failure: DNS, TLS, an extension, or a
+      // Content-Security-Policy that blocks connect-src. Retrying is cheap and
+      // occasionally helps, but the message has to point somewhere useful.
+      lastError = new OverpassError(
+        'Could not reach OpenStreetMap. Check that your browser is allowed to connect to overpass-api.de.',
+      );
+      continue;
+    }
+
+    if (isTransient(response.status)) {
+      lastError = new OverpassError(
+        `The public OpenStreetMap query service is busy (HTTP ${response.status}). It was retried ${BACKOFF_MS.length} times; try again shortly.`,
+      );
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new OverpassError(`OpenStreetMap lookup failed (HTTP ${response.status}).`);
+    }
+
+    let payload: { elements?: OverpassWay[] };
+    try {
+      payload = await response.json();
+    } catch {
+      throw new OverpassError('OpenStreetMap returned something unreadable.');
+    }
+
+    const result = parseFootprints(payload.elements ?? []);
+    cache.set(key, result);
+    return result;
   }
 
-  if (response.status === 429 || response.status === 504) {
-    throw new OverpassError('OpenStreetMap is busy right now. Try again in a moment.');
-  }
-  if (!response.ok) {
-    throw new OverpassError(`OpenStreetMap lookup failed (HTTP ${response.status}).`);
-  }
-
-  let payload: { elements?: OverpassWay[] };
-  try {
-    payload = await response.json();
-  } catch {
-    throw new OverpassError('OpenStreetMap returned something unreadable.');
-  }
-
-  return parseFootprints(payload.elements ?? []);
+  throw lastError ?? new OverpassError('OpenStreetMap lookup failed.');
 }
 
 /** Split an Overpass element list into buildings and roads. Exported for testing. */

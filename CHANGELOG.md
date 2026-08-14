@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-08-15
+
+### Changed
+
+- **Detection now retries and caches.** The public Overpass endpoint is intermittently
+  overloaded rather than down: measured directly, a request returning HTTP 504 succeeded on
+  the next attempt seconds later. Lookups now retry twice with backoff, and a successful
+  result is cached per position so pressing Detect again costs the service nothing.
+- The two failure messages were saying the same thing for different problems. A busy service
+  now says so and mentions that it retried; a `fetch` that throws before any response says
+  the browser could not connect to `overpass-api.de`, which points at a content-security
+  policy, DNS, or an extension rather than at OpenStreetMap being down.
+
+### Notes
+
+No mirror endpoints are shipped, and that is deliberate. The obvious candidates were tested:
+`overpass.osm.ch` only carries Switzerland (five buildings for Zurich, zero for Brussels),
+and two others were unreachable. Shipping an endpoint that has not been verified is worse
+than retrying one that has.
+
 ## [0.2.4] — 2026-08-15
 
 ### Changed
@@ -156,7 +176,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.4...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/striekels/airflow-map-card/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/striekels/airflow-map-card/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/striekels/airflow-map-card/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/striekels/airflow-map-card/compare/v0.2.1...v0.2.2
