@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.4] — 2026-08-15
+
+### Changed
+
+- **The editor's map is always light, and the light/dark toggle added in 0.3.2 is gone.**
+  That map exists to align a line against a roof edge, and the light basemap renders building
+  outlines with far more contrast than the dark one, so there was nothing to choose between.
+  One fewer control beats a control nobody needs to touch.
+
+  The card's own basemap is unaffected and still follows `map.tiles`.
+
 ## [0.3.3] — 2026-08-15
 
 ### Fixed
@@ -264,7 +275,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.3...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/striekels/airflow-map-card/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/striekels/airflow-map-card/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/striekels/airflow-map-card/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/striekels/airflow-map-card/compare/v0.3.0...v0.3.1

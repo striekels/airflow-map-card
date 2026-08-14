@@ -18,6 +18,37 @@ Still to do before the repository goes public: nothing blocking — the test fix
 sanitised (see Distribution) — but the HACS validation job needs a release to validate
 against, so tag `v0.2.1` before running it.
 
+### 0.15 Detect returns 406 from some browsers — **unresolved**
+
+`overpass-api.de` answers with `406 Not Acceptable` and no `Access-Control-Allow-Origin`
+header for at least one real user's browser, so the browser reports it as an opaque CORS
+failure. Reproduced by that user with both POST and GET, from `http://ha.local:8123` in
+Chrome.
+
+What is established:
+
+- Not a content-security policy. The CORS message is a consequence of the 406: Overpass
+  omits the CORS header on error responses.
+- Not the `Origin` header. Overpass returns `Access-Control-Allow-Origin: *` for a
+  plain-HTTP origin such as `http://ha.local:8123`.
+- Not `+` versus `%20` for spaces in the query string. Both return 200 from curl.
+- The identical URL returns 200 from curl, including with a full browser header set.
+
+What is **not** established: one curl run reproduced 406 using a Chrome user agent without
+an `Origin` header, but the service was returning 504s in the same batch, so that result is
+unsound and was not repeated. The switch from POST to GET in 0.3.1 was made on a theory
+that later evidence undermined; GET is still the better shape, but it did not fix this.
+
+Next steps, cheapest first:
+
+- Try a different Overpass instance from the affected browser. If a mirror works, the
+  problem is specific to `overpass-api.de` and a **user-configurable endpoint** is the fix,
+  mirroring how `map.tile_url` already works.
+- Check whether anything between that browser and the internet intercepts requests: a
+  filtering DNS resolver, antivirus web shield, or browser extension can all return 406.
+- Failing both, fall back to manual alignment for affected users and say so plainly in the
+  error rather than implying OpenStreetMap is unreachable.
+
 ### 0.2 Match the road by `addr:street`, not just proximity — **bug in waiting**
 
 `detectFacadeBearing` faces the wall towards the *nearest* road. On a corner plot the

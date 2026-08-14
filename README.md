@@ -188,10 +188,12 @@ While you align, the editor draws a guide over the map:
   you can see what that threshold means for your building.
 
 The line spans the map so that it can be sighted along, which also puts it in the way of
-panning. Two buttons sit beside the bearing readout: the **eye** hides the guide while you
-move the map, and the **sun/moon** switches this map between a light and a dark basemap.
-Roof outlines can be far easier to see on one than the other. Both affect the editor only;
-the card's own basemap comes from `map.theme` and `map.tiles`.
+panning. Use the **eye button** beside the bearing readout to hide it while you move the
+map, then show it again to fine-tune.
+
+The editor's map is always light whatever your dashboard theme, because building outlines
+are considerably easier to see against it. The card's own basemap is separate and follows
+`map.tiles`.
 
 The guide exists only in the editor. Once saved, the card shows the map, the arrow and your
 rows, with no alignment furniture.
