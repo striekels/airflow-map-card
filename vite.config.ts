@@ -9,6 +9,9 @@ export default defineConfig({
   root: 'dev',
   server: {
     port: 5173,
-    open: true,
+    // Deliberately not opening a browser. The harness is usually viewed in an
+    // already-open tab or an embedded preview, and launching a new window on
+    // every start is an interruption rather than a convenience.
+    open: false,
   },
 });

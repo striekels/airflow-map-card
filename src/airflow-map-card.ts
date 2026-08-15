@@ -389,6 +389,18 @@ export class AirflowMapCard extends LitElement {
       display: block;
 
       /*
+       * Contain every z-index used inside this card.
+       *
+       * Leaflet's stylesheet gives its panes and controls z-index 200 to 1000.
+       * With no stacking context here, those compete in whatever context the
+       * host happens to sit in and paint over anything an ancestor lays on top
+       * of the card. In Home Assistant's dashboard edit mode that meant the
+       * edit scrim covered the header and the rows but not the map, which read
+       * as a broken overlay.
+       */
+      isolation: isolate;
+
+      /*
        * Home Assistant themes are inconsistent about which of these they set.
        * Reading only --ha-card-background means a theme that defines just
        * --card-background-color falls straight through to the literal, giving a

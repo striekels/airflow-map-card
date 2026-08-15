@@ -393,6 +393,13 @@ export class FacadePicker extends LitElement {
 
     :host {
       /*
+       * Same reason as the card: Leaflet's panes carry z-index 200 to 1000, and
+       * without a stacking context here they escape into the surrounding
+       * dialog and paint over its chrome.
+       */
+      isolation: isolate;
+
+      /*
        * Declared here as well as on the card: custom properties inherit down the
        * DOM, but the editor is a sibling tree rather than a descendant of the
        * card, so it does not pick up the card's definition. See the note there

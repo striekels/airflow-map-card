@@ -9,7 +9,14 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **The dashboard edit overlay did not cover the map.** In edit mode Home Assistant lays a
+  scrim over each card; the header and rows dimmed but the map stayed bright, which looked
+  like a rendering fault. The card established no stacking context, so Leaflet's panes and
+  controls, which its stylesheet gives `z-index` 200 to 1000, escaped into the surrounding
+  context and outranked the scrim. The card and the editor's picker now both declare
+  `isolation: isolate`, containing every z-index they use.
 
 ## [0.3.4] — 2026-08-15
 
