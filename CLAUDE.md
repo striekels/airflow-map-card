@@ -97,9 +97,26 @@ that property.
 
 ## Releasing
 
-Versions must agree in three places: `package.json`, `CARD_VERSION` in `src/const.ts`, and
-the git tag. The release workflow enforces this and refuses to publish a mismatch. Tagging
-`v*` builds the bundle and attaches it to a GitHub release, which is what HACS downloads.
+**Do not bump the version as part of an ordinary change, and do not tag one.** Releases are
+cut deliberately, when someone decides a set of changes is worth shipping. A version per
+change makes the numbers meaningless and buries the releases that mattered.
+
+An ordinary change is therefore: edit, test, write the entry under `## [Unreleased]` in
+`CHANGELOG.md`, commit, push. Nothing else.
+
+Releasing, only when explicitly asked for:
+
+1. Move the `## [Unreleased]` entries under a new `## [x.y.z] — date` heading and add the
+   compare link at the foot of the file.
+2. Set the same version in `package.json` and in `CARD_VERSION` in `src/const.ts`.
+3. Commit, then `git tag -a vx.y.z` and push the tag.
+
+The three versions must agree; the release workflow refuses to publish a mismatch. Pushing a
+`v*` tag builds the bundle and attaches it to a GitHub release, which is what HACS
+downloads.
+
+To try unreleased work in Home Assistant without cutting a release, HACS can install a
+repository's default branch: Redownload, then pick `main` from the version list.
 
 ## Pending decisions
 
