@@ -9,6 +9,30 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **The editor is reorganised into five groups instead of eight.** Location and the facade
+  picker were separate sections, and both values were _also_ duplicated as numeric fields in
+  form groups further down: two controls for one setting, several screens apart, with no
+  indication which had last won. They are now one **Where** section holding the address
+  search, the map and an **Exact values** panel for typing coordinates, zoom and the facade
+  angle directly.
+
+  **Arrow** and **Map appearance** merged into one **Appearance** group, which also absorbed
+  the card title that previously floated above the form ungrouped.
+
+- **Per-row styling is collapsed behind an Appearance panel.** Each info row showed seven
+  styling fields permanently expanded, so four rows put twenty-eight controls between you and
+  the Add button. Row type and value stay visible; the rest is one click away. The **Info
+  rows** section is itself collapsible and shows the row count when closed.
+
+- **The editor's own sections are now `ha-expansion-panel`**, the element `ha-form` builds
+  its groups from, so hand-written and generated sections no longer read as two different
+  editors stacked together.
+
+- The facade angle field steps by 0.1° to match the picker's nudge buttons. A whole-degree
+  slider silently rounded away the fractional bearing that detection produces.
+
 ### Fixed
 
 - **The dashboard edit overlay did not cover the map.** In edit mode Home Assistant lays a
@@ -66,7 +90,7 @@ including one pinning the interaction that caused this.
 
 - **Detection failed inside Home Assistant with an unhelpful CORS error.** The lookup was a
   POST; Overpass answers a POST whose content type it will not accept with `406 Not
-  Acceptable` **and no `Access-Control-Allow-Origin` header**, so the browser reports an
+Acceptable` **and no `Access-Control-Allow-Origin` header**, so the browser reports an
   opaque CORS failure rather than the rejection it actually is. The card then said it could
   not reach OpenStreetMap, which sent the diagnosis in the wrong direction entirely.
 
@@ -156,7 +180,7 @@ than retrying one that has.
   near-illegible text on a dark dashboard. It read `--ha-card-background` with a hard-coded
   white fallback, but that variable is frequently undefined at document level: Home
   Assistant's own `ha-card` resolves `var(--ha-card-background, var(--card-background-color,
-  white))`, and a theme setting only the latter fell straight through to the literal.
+white))`, and a theme setting only the latter fell straight through to the literal.
 
   All surface colours now resolve through a single `--airflow-surface` variable using the
   same chain `ha-card` itself uses. This also affected the map attribution bar, the editor's

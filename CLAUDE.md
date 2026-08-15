@@ -12,7 +12,8 @@ needs comes from entities that already exist in the user's instance.
 
 ```bash
 npm install
-npm run dev        # Vite dev server: card harness at /, facade picker at /picker.html
+npm run dev        # Vite dev server: card at /, facade picker at /picker.html,
+                   # visual editor at /editor.html
 npm test           # vitest, ~96 tests
 npm run lint
 npm run build      # tsc --noEmit, then esbuild -> dist/airflow-map-card.js
@@ -27,6 +28,7 @@ tests and build on every push.
 src/
   airflow-map-card.ts   Card element: config validation, layout, hass diffing
   editor.ts             Visual editor (ha-form) + address search + row list
+  editor/schema.ts      ha-form schemas. Pure data, so they can be tested.
   editor/facade-picker.ts  Map, building detection, drag-to-align. Editor only.
   map/                  Leaflet lifecycle, tile presets, aspect-ratio maths
   overlay/              Wind arrow and facade guide, as pure render functions
@@ -40,7 +42,7 @@ else.
 ## Conventions that are not obvious
 
 **Bearings.** `data/bearing.ts` owns every trigonometric operation in the project. Home
-Assistant's `wind_bearing` is the direction wind comes *from*; the arrow points the way air
+Assistant's `wind_bearing` is the direction wind comes _from_; the arrow points the way air
 travels. `facade_bearing` is the outward normal of the front wall. A sign error here produces
 an answer that looks entirely plausible and is 180° wrong, which is why the module is
 isolated and exhaustively tested. Do not do angle arithmetic anywhere else.
@@ -70,16 +72,38 @@ blank card.
 for building outlines. One request per button press, result stored in the config as plain
 numbers. Nothing is ever fetched while the card is running. Do not add runtime lookups.
 
+**A nameless `ha-form` group is a pass-through, and that is load-bearing.** `ha-form` decides
+nesting from the schema, using
+
+```js
+getValue = (obj, item) => (obj ? (!item.name || item.flatten ? obj : obj[item.name]) : undefined);
+```
+
+with a matching rule on the way back up. A group **with** a name scopes its children to
+`config[name]`; a group **without** one hands the whole object through. That is the only
+reason one panel can hold `title`, `arrow` and `map`, which are three different top-level
+keys, or why a row's styling fields stay flat on the row.
+
+Adding a `name` to one of those groups does not throw or warn. It quietly starts writing to
+`config.appearance.arrow.size`, which the card reads as unset. `test/editor-schema.test.ts`
+asserts the resulting paths for exactly this reason.
+
 **Never put backticks in a `css` tagged template**, including inside comments. They terminate
 the template literal.
 
 ## Testing
 
-Pure logic is well covered; rendering is not. Two gaps have each already produced a shipped
+Pure logic is well covered; rendering is not. These gaps have each already produced a shipped
 bug:
 
 - No tests for how the card behaves inside real container layouts.
-- No tests for the editor at all.
+- The editor's schemas are tested, but its rendering and event wiring are not.
+
+`dev/ha-stubs.ts` stands in for the Home Assistant frontend elements the editor uses so
+`/editor.html` works outside Home Assistant. The `ha-form` stub reproduces the real
+component's data semantics deliberately rather than approximating them — an approximation
+would hide exactly the nesting mistakes the harness exists to catch. If you change it, copy
+the behaviour from the frontend source rather than guessing.
 
 `test/footprint.test.ts` uses real OpenStreetMap geometry, shifted in longitude so it does
 not identify a home. The shift is longitude-only and applied uniformly, so every derived
@@ -90,7 +114,7 @@ that property.
 
 - TypeScript strict, no `any` in new code without reason.
 - Prettier and ESLint are configured; run them.
-- Comments explain *why*, especially where the code looks odd. Most of the odd-looking code
+- Comments explain _why_, especially where the code looks odd. Most of the odd-looking code
   here is odd because of a specific bug; say which.
 - Conventional Commits.
 - No em dashes in generated text.
@@ -103,7 +127,7 @@ force pushes and branch deletion.
 
 Two things to know before changing it:
 
-- Only `build` is a required check. The `hacs` job reports as *skipped* because it runs on
+- Only `build` is a required check. The `hacs` job reports as _skipped_ because it runs on
   manual dispatch, and a required check that never runs blocks every merge permanently.
 - Repository admins are listed as a bypass actor, so the maintainer can still push directly.
   Unlike the old `enforce_admins` flag, rulesets do not exempt admins implicitly; remove the

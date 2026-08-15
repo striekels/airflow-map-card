@@ -1,0 +1,256 @@
+/**
+ * `ha-form` schemas for the visual editor. Pure data, kept out of `editor.ts`
+ * so it can be tested in the node environment the rest of the suite runs in.
+ *
+ * The load-bearing detail here is which groups carry a `name` and which do not,
+ * because that alone decides where a value is written in the config.
+ * `ha-form`'s getValue is:
+ *
+ *   obj ? (!item.name || item.flatten ? obj : obj[item.name]) : undefined
+ *
+ * and its change handler mirrors it. So a group **with** a name scopes its
+ * children to `config[name]`, and a group **without** one passes the whole
+ * object through, letting a single panel hold fields from several config keys.
+ * Adding a `name` to a pass-through group does not fail loudly; it quietly
+ * starts writing settings one level too deep. See editor-schema.test.ts.
+ */
+
+export type RowKind = 'source' | 'entity' | 'template';
+
+/**
+ * The typed-in equivalents of what the map sets by dragging. Bound to their
+ * config slices directly rather than through the main form, because one panel
+ * holds fields from two different config keys.
+ */
+export const EXACT_LOCATION_SCHEMA = [
+  {
+    type: 'grid',
+    schema: [
+      { name: 'latitude', selector: { number: { mode: 'box', step: 'any' } } },
+      { name: 'longitude', selector: { number: { mode: 'box', step: 'any' } } },
+    ],
+  },
+  { name: 'zoom', selector: { number: { min: 1, max: 19, mode: 'slider' } } },
+];
+
+export const EXACT_HOUSE_SCHEMA = [
+  {
+    name: 'facade_bearing',
+    // Step matches the picker's nudge buttons. A whole-degree slider silently
+    // rounded away the fractional bearing detection produces.
+    selector: {
+      number: { min: 0, max: 359.9, step: 0.1, mode: 'slider', unit_of_measurement: '°' },
+    },
+  },
+  {
+    name: 'facade_bearing_entity',
+    selector: { entity: { domain: ['input_number', 'sensor', 'number'] } },
+  },
+];
+
+export function cardSchema(): unknown[] {
+  return [
+    {
+      name: 'wind',
+      type: 'expandable',
+      title: 'Wind source',
+      icon: 'mdi:weather-windy',
+      schema: [
+        { name: 'entity', selector: { entity: { domain: 'weather' } } },
+        {
+          type: 'grid',
+          schema: [
+            { name: 'speed_entity', selector: { entity: { domain: 'sensor' } } },
+            { name: 'bearing_entity', selector: { entity: { domain: 'sensor' } } },
+            { name: 'gust_entity', selector: { entity: { domain: 'sensor' } } },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'airflow',
+      type: 'expandable',
+      title: 'Airflow classification',
+      icon: 'mdi:air-filter',
+      schema: [
+        {
+          name: 'mode',
+          selector: {
+            select: {
+              mode: 'dropdown',
+              options: [
+                { value: 'compute', label: 'Compute from bearing' },
+                { value: 'entity', label: 'Take the label from an entity' },
+                { value: 'off', label: 'Off' },
+              ],
+            },
+          },
+        },
+        { name: 'entity', selector: { entity: {} } },
+        {
+          type: 'grid',
+          schema: [
+            { name: 'weak_below', selector: { number: { mode: 'box', step: 'any', min: 0 } } },
+            {
+              name: 'sideways_from',
+              selector: { number: { min: 1, max: 90, mode: 'slider', unit_of_measurement: '°' } },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      // Pass-through group: no `name`, so `title`, `arrow` and `map` all stay at
+      // the level they belong to. Three top-level config keys, one panel.
+      type: 'expandable',
+      title: 'Appearance',
+      icon: 'mdi:palette-outline',
+      schema: [
+        { name: 'title', selector: { text: {} } },
+        {
+          name: 'arrow',
+          type: 'expandable',
+          title: 'Arrow',
+          icon: 'mdi:arrow-up-bold',
+          schema: [
+            {
+              type: 'grid',
+              schema: [
+                { name: 'size', selector: { number: { min: 20, max: 400, mode: 'slider' } } },
+                {
+                  name: 'color_mode',
+                  selector: {
+                    select: {
+                      mode: 'dropdown',
+                      options: [
+                        { value: 'airflow', label: 'By airflow direction' },
+                        { value: 'fixed', label: 'Fixed colour' },
+                      ],
+                    },
+                  },
+                },
+                { name: 'color', selector: { text: {} } },
+                { name: 'show_gust', selector: { boolean: {} } },
+                { name: 'hide', selector: { boolean: {} } },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'map',
+          type: 'expandable',
+          title: 'Map',
+          icon: 'mdi:map',
+          schema: [
+            {
+              type: 'grid',
+              schema: [
+                {
+                  name: 'tiles',
+                  selector: {
+                    select: {
+                      mode: 'dropdown',
+                      options: [
+                        { value: 'auto', label: 'Follow the dashboard theme' },
+                        { value: 'osm', label: 'OpenStreetMap (light)' },
+                        { value: 'carto-light', label: 'CARTO light' },
+                        { value: 'carto-dark', label: 'CARTO dark' },
+                      ],
+                    },
+                  },
+                },
+                { name: 'interactive', selector: { boolean: {} } },
+                { name: 'attribution', selector: { boolean: {} } },
+                { name: 'aspect_ratio', selector: { text: {} } },
+                { name: 'height', selector: { number: { min: 100, max: 1000, mode: 'box' } } },
+              ],
+            },
+            { name: 'tile_url', selector: { text: {} } },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
+export function rowSchema(kind: RowKind): unknown[] {
+  const kindSelect = {
+    name: 'kind',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: [
+          { value: 'source', label: 'Built-in value' },
+          { value: 'entity', label: 'Entity' },
+          { value: 'template', label: 'Template' },
+        ],
+      },
+    },
+  };
+
+  const specific =
+    kind === 'source'
+      ? [
+          {
+            name: 'source',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: [
+                  { value: 'airflow', label: 'Airflow direction' },
+                  { value: 'speed', label: 'Wind speed' },
+                  { value: 'gust', label: 'Wind gust' },
+                  { value: 'bearing', label: 'Wind bearing (degrees)' },
+                  { value: 'cardinal', label: 'Wind bearing (compass point)' },
+                ],
+              },
+            },
+          },
+        ]
+      : kind === 'entity'
+        ? [
+            { name: 'entity', selector: { entity: {} } },
+            { name: 'attribute', selector: { text: {} } },
+          ]
+        : [{ name: 'template', selector: { template: {} } }];
+
+  return [
+    kindSelect,
+    ...specific,
+    {
+      // Pass-through group, so these stay flat on the row rather than nesting
+      // under an `appearance` key. Seven styling fields per row, always
+      // expanded, meant four rows put twenty-eight controls on screen before
+      // you could reach the Add button.
+      type: 'expandable',
+      title: 'Appearance',
+      icon: 'mdi:tune',
+      schema: [
+        {
+          type: 'grid',
+          schema: [
+            { name: 'name', selector: { text: {} } },
+            { name: 'icon', selector: { icon: {} } },
+            { name: 'prefix', selector: { text: {} } },
+            { name: 'suffix', selector: { text: {} } },
+            { name: 'unit', selector: { text: {} } },
+            { name: 'precision', selector: { number: { min: 0, max: 5, mode: 'box' } } },
+            {
+              name: 'size',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: [
+                    { value: 'small', label: 'Small' },
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'large', label: 'Large' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ];
+}

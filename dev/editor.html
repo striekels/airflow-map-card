@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>editor — dev harness</title>
+    <style>
+      :root {
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --secondary-background-color: #e5e5e5;
+        --divider-color: rgba(0, 0, 0, 0.12);
+        --ha-card-background: #fff;
+        --primary-color: #03a9f4;
+        --text-primary-color: #fff;
+        --error-color: #db4437;
+        color-scheme: light;
+      }
+      body {
+        font-family: Roboto, system-ui, sans-serif;
+        margin: 0;
+        padding: 24px;
+        background: #f2f2f2;
+        color: var(--primary-text-color);
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      .panel {
+        width: 480px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      pre {
+        flex: 1;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 16px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin: 0;
+        max-height: 90vh;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel"><div id="host"></div></div>
+    <pre id="out"></pre>
+
+    <script type="module">
+      import './ha-stubs.ts';
+      import '../src/editor.ts';
+
+      const config = {
+        type: 'custom:airflow-map-card',
+        title: 'Airflow',
+        location: { latitude: 51.2194, longitude: 4.4025, zoom: 18 },
+        house: { facade_bearing: 166.9 },
+        wind: { entity: 'weather.home' },
+        airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
+        arrow: { size: 130, show_gust: true },
+        map: { interactive: true },
+        rows: [
+          { source: 'airflow', size: 'large' },
+          { source: 'speed', name: 'Wind' },
+          { entity: 'sensor.outside_temperature' },
+        ],
+      };
+
+      const editor = document.createElement('airflow-map-card-editor');
+      editor.hass = {
+        config: { latitude: 51.2194, longitude: 4.4025 },
+        themes: { darkMode: false },
+        states: {},
+        locale: { language: 'en' },
+      };
+      editor.setConfig(config);
+      document.getElementById('host').appendChild(editor);
+
+      const out = document.getElementById('out');
+      const show = (c) => (out.textContent = JSON.stringify(c, null, 2));
+      show(config);
+      editor.addEventListener('config-changed', (event) => show(event.detail.config));
+    </script>
+  </body>
+</html>

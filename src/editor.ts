@@ -3,14 +3,25 @@ import { customElement, state } from 'lit/decorators.js';
 
 import { EDITOR_TYPE, DEFAULT_ZOOM } from './const';
 import type { HomeAssistant } from './ha-types';
-import type { AirflowMapCardConfig, LovelaceCardEditor, RowConfig } from './types';
+import type {
+  AirflowMapCardConfig,
+  HouseConfig,
+  LocationConfig,
+  LovelaceCardEditor,
+  RowConfig,
+} from './types';
 import { fireEvent } from './data/actions';
 import { resolveWind } from './data/wind-source';
 import { geocode, GeocodeError } from './data/geocode';
 import { DEFAULT_SIDEWAYS_FROM } from './data/airflow';
+import {
+  EXACT_HOUSE_SCHEMA,
+  EXACT_LOCATION_SCHEMA,
+  cardSchema,
+  rowSchema,
+  type RowKind,
+} from './editor/schema';
 import './editor/facade-picker';
-
-type RowKind = 'source' | 'entity' | 'template';
 
 @customElement(EDITOR_TYPE)
 export class AirflowMapCardEditor extends LitElement implements LovelaceCardEditor {
@@ -30,11 +41,11 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
 
     return html`
       <div class="editor">
-        ${this._renderAddressSearch()} ${this._renderFacadePicker()}
+        ${this._renderWhere()}
         <ha-form
           .hass=${this.hass}
           .data=${this._formData}
-          .schema=${this._schema()}
+          .schema=${cardSchema()}
           .computeLabel=${this._computeLabel}
           @value-changed=${this._formChanged}
         ></ha-form>
@@ -43,55 +54,124 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     `;
   }
 
-  // ---------------------------------------------------------------- address
+  // ------------------------------------------------------------------ where
 
-  private _renderAddressSearch(): TemplateResult {
+  /**
+   * Location and facade angle are one task, not two. A bearing only means
+   * anything for the building the map is showing, and they used to be separate
+   * sections whose values were *also* duplicated as numeric fields further down
+   * the form. Two controls for one value, several screens apart, is how a card
+   * ends up pointing at one place with an angle describing another.
+   */
+  private _renderWhere(): TemplateResult {
     const location = this._config.location ?? {};
+    const latitude = location.latitude ?? this.hass?.config.latitude;
+    const longitude = location.longitude ?? this.hass?.config.longitude;
     const hasCoords = location.latitude !== undefined && location.longitude !== undefined;
 
     return html`
-      <div class="section">
-        <div class="section-title">Location</div>
-        <div class="address-row">
-          <ha-textfield
-            .label=${'Search an address'}
-            .value=${this._addressQuery}
-            @input=${(event: Event) => {
+      <ha-expansion-panel outlined expanded .header=${'Where'} .secondary=${this._whereSummary}>
+        <ha-icon slot="leading-icon" icon="mdi:map-marker"></ha-icon>
+        <div class="panel-content">
+          <div class="address-row">
+            <ha-textfield
+              .label=${'Search an address'}
+              .value=${this._addressQuery}
+              @input=${(event: Event) => {
               this._addressQuery = (event.target as HTMLInputElement).value;
             }}
-            @keydown=${(event: KeyboardEvent) => {
+              @keydown=${(event: KeyboardEvent) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
                 void this._searchAddress();
               }
             }}
-          ></ha-textfield>
-          <button
-            class="primary"
-            ?disabled=${this._geocoding || this._addressQuery.trim() === ''}
-            @click=${this._searchAddress}
-          >
-            ${this._geocoding ? 'Searching…' : 'Search'}
-          </button>
-          <button class="secondary" @click=${this._useHomeLocation}>Use home</button>
-        </div>
-        ${
+            ></ha-textfield>
+            <button
+              class="primary"
+              ?disabled=${this._geocoding || this._addressQuery.trim() === ''}
+              @click=${this._searchAddress}
+            >
+              ${this._geocoding ? 'Searching…' : 'Search'}
+            </button>
+            <button class="secondary" @click=${this._useHomeLocation}>Use home</button>
+          </div>
+          ${
           this._geocodeError
             ? html`<ha-alert alert-type="error">${this._geocodeError}</ha-alert>`
             : nothing
         }
-        <p class="hint">
           ${
-            hasCoords
-              ? html`Using
-                  <code>${location.latitude?.toFixed(5)}, ${location.longitude?.toFixed(5)}</code>.`
-              : html`No coordinates set — falling back to your Home Assistant home location.`
-          }
-          Searching uses OpenStreetMap's Nominatim service once per search; the result is stored as
-          coordinates, so nothing is looked up while the card is running.
-        </p>
-      </div>
+          latitude === undefined || longitude === undefined
+            ? html`<p class="hint">Search for an address above to place the map.</p>`
+            : html`
+                <airflow-facade-picker
+                  .hass=${this.hass}
+                  .latitude=${latitude}
+                  .longitude=${longitude}
+                  .bearing=${this._config.house?.facade_bearing ?? 0}
+                  .sidewaysFrom=${this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM}
+                  @bearing-changed=${this._bearingChanged}
+                  @location-changed=${this._locationChanged}
+                ></airflow-facade-picker>
+              `
+        }
+
+          <ha-expansion-panel
+            outlined
+            .header=${'Exact values'}
+            .secondary=${'Coordinates, zoom and facade angle'}
+          >
+            <ha-icon slot="leading-icon" icon="mdi:tune"></ha-icon>
+            <div class="panel-content">
+              <ha-form
+                .hass=${this.hass}
+                .data=${location}
+                .schema=${EXACT_LOCATION_SCHEMA}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${this._exactLocationChanged}
+              ></ha-form>
+              <ha-form
+                .hass=${this.hass}
+                .data=${this._config.house ?? {}}
+                .schema=${EXACT_HOUSE_SCHEMA}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${this._exactHouseChanged}
+              ></ha-form>
+            </div>
+          </ha-expansion-panel>
+
+          <p class="hint">
+            ${
+              hasCoords
+                ? nothing
+                : html`No coordinates set — falling back to your Home Assistant home location.`
+            }
+            Searching uses OpenStreetMap's Nominatim service once per search; the result is stored
+            as coordinates, so nothing is looked up while the card is running.
+          </p>
+        </div>
+      </ha-expansion-panel>
     `;
+  }
+
+  /** Collapsed-state summary, so the panel still says where the card points. */
+  private get _whereSummary(): string {
+    const { latitude, longitude } = this._config.location ?? {};
+    const bearing = this._config.house?.facade_bearing;
+    if (latitude === undefined || longitude === undefined) return 'Home Assistant home location';
+    const coords = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    return bearing === undefined ? coords : `${coords} · facade ${bearing.toFixed(1)}°`;
+  }
+
+  private _exactLocationChanged(event: CustomEvent<{ value: LocationConfig }>): void {
+    event.stopPropagation();
+    this._updateConfig({ location: { ...this._config.location, ...event.detail.value } });
+  }
+
+  private _exactHouseChanged(event: CustomEvent<{ value: HouseConfig }>): void {
+    event.stopPropagation();
+    this._updateConfig({ house: { ...this._config.house, ...event.detail.value } });
   }
 
   private async _searchAddress(): Promise<void> {
@@ -133,33 +213,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
 
   // ---------------------------------------------------------------- facade
 
-  private _renderFacadePicker(): TemplateResult {
-    const location = this._config.location ?? {};
-    const latitude = location.latitude ?? this.hass?.config.latitude;
-    const longitude = location.longitude ?? this.hass?.config.longitude;
-
-    return html`
-      <div class="section">
-        <div class="section-title">Front of the house</div>
-        ${
-          latitude === undefined || longitude === undefined
-            ? html`<p class="hint">Set a location above first.</p>`
-            : html`
-                <airflow-facade-picker
-                  .hass=${this.hass}
-                  .latitude=${latitude}
-                  .longitude=${longitude}
-                  .bearing=${this._config.house?.facade_bearing ?? 0}
-                  .sidewaysFrom=${this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM}
-                  @bearing-changed=${this._bearingChanged}
-                  @location-changed=${this._locationChanged}
-                ></airflow-facade-picker>
-              `
-        }
-      </div>
-    `;
-  }
-
   private _bearingChanged(event: CustomEvent<{ bearing: number }>): void {
     event.stopPropagation();
     this._updateConfig({
@@ -198,154 +251,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     if (!next.rows) delete next.rows;
     this._config = next;
     fireEvent(this, 'config-changed', { config: this._config });
-  }
-
-  private _schema(): unknown[] {
-    return [
-      { name: 'title', selector: { text: {} } },
-      {
-        name: 'location',
-        type: 'expandable',
-        title: 'Map position',
-        icon: 'mdi:map-marker',
-        schema: [
-          {
-            type: 'grid',
-            schema: [
-              { name: 'latitude', selector: { number: { mode: 'box', step: 'any' } } },
-              { name: 'longitude', selector: { number: { mode: 'box', step: 'any' } } },
-            ],
-          },
-          { name: 'zoom', selector: { number: { min: 1, max: 19, mode: 'slider' } } },
-        ],
-      },
-      {
-        name: 'wind',
-        type: 'expandable',
-        title: 'Wind source',
-        icon: 'mdi:weather-windy',
-        schema: [
-          { name: 'entity', selector: { entity: { domain: 'weather' } } },
-          {
-            type: 'grid',
-            schema: [
-              { name: 'speed_entity', selector: { entity: { domain: 'sensor' } } },
-              { name: 'bearing_entity', selector: { entity: { domain: 'sensor' } } },
-              { name: 'gust_entity', selector: { entity: { domain: 'sensor' } } },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'house',
-        type: 'expandable',
-        title: 'House orientation',
-        icon: 'mdi:home-outline',
-        schema: [
-          {
-            name: 'facade_bearing',
-            selector: { number: { min: 0, max: 359, mode: 'slider', unit_of_measurement: '°' } },
-          },
-          {
-            name: 'facade_bearing_entity',
-            selector: { entity: { domain: ['input_number', 'sensor', 'number'] } },
-          },
-        ],
-      },
-      {
-        name: 'airflow',
-        type: 'expandable',
-        title: 'Airflow classification',
-        icon: 'mdi:air-filter',
-        schema: [
-          {
-            name: 'mode',
-            selector: {
-              select: {
-                mode: 'dropdown',
-                options: [
-                  { value: 'compute', label: 'Compute from bearing' },
-                  { value: 'entity', label: 'Take the label from an entity' },
-                  { value: 'off', label: 'Off' },
-                ],
-              },
-            },
-          },
-          { name: 'entity', selector: { entity: {} } },
-          {
-            type: 'grid',
-            schema: [
-              { name: 'weak_below', selector: { number: { mode: 'box', step: 'any', min: 0 } } },
-              {
-                name: 'sideways_from',
-                selector: { number: { min: 1, max: 90, mode: 'slider', unit_of_measurement: '°' } },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'arrow',
-        type: 'expandable',
-        title: 'Arrow',
-        icon: 'mdi:arrow-up-bold',
-        schema: [
-          {
-            type: 'grid',
-            schema: [
-              { name: 'size', selector: { number: { min: 20, max: 400, mode: 'slider' } } },
-              {
-                name: 'color_mode',
-                selector: {
-                  select: {
-                    mode: 'dropdown',
-                    options: [
-                      { value: 'airflow', label: 'By airflow direction' },
-                      { value: 'fixed', label: 'Fixed colour' },
-                    ],
-                  },
-                },
-              },
-              { name: 'color', selector: { text: {} } },
-              { name: 'show_gust', selector: { boolean: {} } },
-              { name: 'hide', selector: { boolean: {} } },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'map',
-        type: 'expandable',
-        title: 'Map appearance',
-        icon: 'mdi:map',
-        schema: [
-          {
-            type: 'grid',
-            schema: [
-              {
-                name: 'tiles',
-                selector: {
-                  select: {
-                    mode: 'dropdown',
-                    options: [
-                      { value: 'auto', label: 'Follow the dashboard theme' },
-                      { value: 'osm', label: 'OpenStreetMap (light)' },
-                      { value: 'carto-light', label: 'CARTO light' },
-                      { value: 'carto-dark', label: 'CARTO dark' },
-                    ],
-                  },
-                },
-              },
-              { name: 'interactive', selector: { boolean: {} } },
-              { name: 'attribution', selector: { boolean: {} } },
-              { name: 'aspect_ratio', selector: { text: {} } },
-              { name: 'height', selector: { number: { min: 100, max: 1000, mode: 'box' } } },
-            ],
-          },
-          { name: 'tile_url', selector: { text: {} } },
-        ],
-      },
-    ];
   }
 
   private _computeLabel = (schema: { name: string }): string => {
@@ -389,20 +294,26 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
 
   private _renderRows(): TemplateResult {
     const rows = this._config.rows ?? [];
+    const summary =
+      rows.length === 0
+        ? 'Defaults: airflow, wind speed and bearing'
+        : `${rows.length} row${rows.length === 1 ? '' : 's'}`;
 
     return html`
-      <div class="section">
-        <div class="section-title">Info rows</div>
-        ${
-          rows.length === 0
-            ? html`<p class="hint">
-                No rows configured — the card falls back to airflow, wind speed and bearing.
-              </p>`
-            : nothing
-        }
-        ${rows.map((row, index) => this._renderRowEditor(row, index, rows.length))}
-        <button class="secondary" @click=${this._addRow}>Add row</button>
-      </div>
+      <ha-expansion-panel outlined .header=${'Info rows'} .secondary=${summary}>
+        <ha-icon slot="leading-icon" icon="mdi:format-list-bulleted"></ha-icon>
+        <div class="panel-content">
+          ${
+            rows.length === 0
+              ? html`<p class="hint">
+                  No rows configured — the card falls back to airflow, wind speed and bearing.
+                </p>`
+              : nothing
+          }
+          ${rows.map((row, index) => this._renderRowEditor(row, index, rows.length))}
+          <button class="secondary" @click=${this._addRow}>Add row</button>
+        </div>
+      </ha-expansion-panel>
     `;
   }
 
@@ -499,18 +410,26 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       gap: 16px;
     }
 
-    .section {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      border: 1px solid var(--divider-color);
+    /*
+     * The editor's own groups are ha-expansion-panel, the same element ha-form
+     * builds its expandables from, so hand-rolled sections and generated ones
+     * read as one editor rather than two stacked visual languages.
+     */
+    ha-expansion-panel {
+      display: block;
+      --expansion-panel-content-padding: 0;
       border-radius: 8px;
     }
 
-    .section-title {
-      font-weight: 500;
-      color: var(--primary-text-color);
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    ha-icon[slot='leading-icon'] {
+      color: var(--secondary-text-color);
     }
 
     .address-row {
@@ -622,77 +541,6 @@ function rowSummary(row: RowConfig, index: number): string {
   if (row.entity) return row.entity;
   if (row.source) return `Built-in: ${row.source}`;
   return `Row ${index + 1}`;
-}
-
-function rowSchema(kind: RowKind): unknown[] {
-  const kindSelect = {
-    name: 'kind',
-    selector: {
-      select: {
-        mode: 'dropdown',
-        options: [
-          { value: 'source', label: 'Built-in value' },
-          { value: 'entity', label: 'Entity' },
-          { value: 'template', label: 'Template' },
-        ],
-      },
-    },
-  };
-
-  const specific =
-    kind === 'source'
-      ? [
-          {
-            name: 'source',
-            selector: {
-              select: {
-                mode: 'dropdown',
-                options: [
-                  { value: 'airflow', label: 'Airflow direction' },
-                  { value: 'speed', label: 'Wind speed' },
-                  { value: 'gust', label: 'Wind gust' },
-                  { value: 'bearing', label: 'Wind bearing (degrees)' },
-                  { value: 'cardinal', label: 'Wind bearing (compass point)' },
-                ],
-              },
-            },
-          },
-        ]
-      : kind === 'entity'
-        ? [
-            { name: 'entity', selector: { entity: {} } },
-            { name: 'attribute', selector: { text: {} } },
-          ]
-        : [{ name: 'template', selector: { template: {} } }];
-
-  return [
-    kindSelect,
-    ...specific,
-    {
-      type: 'grid',
-      schema: [
-        { name: 'name', selector: { text: {} } },
-        { name: 'icon', selector: { icon: {} } },
-        { name: 'prefix', selector: { text: {} } },
-        { name: 'suffix', selector: { text: {} } },
-        { name: 'unit', selector: { text: {} } },
-        { name: 'precision', selector: { number: { min: 0, max: 5, mode: 'box' } } },
-        {
-          name: 'size',
-          selector: {
-            select: {
-              mode: 'dropdown',
-              options: [
-                { value: 'small', label: 'Small' },
-                { value: 'normal', label: 'Normal' },
-                { value: 'large', label: 'Large' },
-              ],
-            },
-          },
-        },
-      ],
-    },
-  ];
 }
 
 function rowLabel(schema: { name: string }): string {
