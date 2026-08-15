@@ -341,7 +341,12 @@ anything.
 
 ## Contributing
 
-Issues and pull requests are welcome. Before opening a PR:
+Issues and pull requests are welcome.
+
+`main` is protected: changes reach it through a pull request that passes CI and is approved
+by the maintainer. Fork the repository, work on a branch, and open a PR against `main`.
+
+Before opening one:
 
 - `npm test`, `npm run lint` and `npm run build` should all pass.
 - Keep compass and geometry maths in `src/data/bearing.ts` and `src/data/footprint.ts`, and

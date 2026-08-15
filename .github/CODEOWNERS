@@ -1,0 +1,6 @@
+# Every change is reviewed by the maintainer.
+#
+# Combined with the "require review from Code Owners" branch rule, this means a
+# pull request cannot be approved by just anyone with write access: it needs an
+# approval from an owner listed here.
+* @striekels
