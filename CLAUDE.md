@@ -95,6 +95,20 @@ that property.
 - Conventional Commits.
 - No em dashes in generated text.
 
+## Branch protection
+
+`main` is governed by a repository **ruleset** (not the older branch-protection API), which
+requires a pull request with one code-owner approval and a passing `build` check, and blocks
+force pushes and branch deletion.
+
+Two things to know before changing it:
+
+- Only `build` is a required check. The `hacs` job reports as *skipped* because it runs on
+  manual dispatch, and a required check that never runs blocks every merge permanently.
+- Repository admins are listed as a bypass actor, so the maintainer can still push directly.
+  Unlike the old `enforce_admins` flag, rulesets do not exempt admins implicitly; remove the
+  bypass actor and the rules bind everyone, including the owner.
+
 ## Releasing
 
 **Do not bump the version as part of an ordinary change, and do not tag one.** Releases are
