@@ -113,22 +113,13 @@ export function pointerBearing(
   return normalizeAngle((Math.atan2(pointerX - centreX, centreY - pointerY) * 180) / Math.PI);
 }
 
-/**
- * Facade bearing implied by dragging the wall line to `pointerAngle`.
- *
- * The wall lies perpendicular to the facade normal, so a pointer angle admits
- * two normals 180 degrees apart. Picking the one nearer the current bearing
- * keeps the front of the house on the side the user already chose — otherwise
- * grabbing the far end of the line would silently flip front and back.
+/*
+ * `bearingFromDrag` lived here until the guide's handle moved onto the outward
+ * normal. It resolved the 180-degree ambiguity of grabbing the wall line, which
+ * looks the same from both ends, by picking whichever normal sat nearer the
+ * current bearing. A handle on the normal points one way only, so the pointer
+ * angle is the bearing and the ambiguity does not arise.
  */
-export function bearingFromDrag(pointerAngle: number, currentBearing: number): number {
-  const candidates = [normalizeAngle(pointerAngle - 90), normalizeAngle(pointerAngle + 90)];
-  const [first, second] = candidates;
-  return Math.abs(angularDifference(first, currentBearing)) <=
-    Math.abs(angularDifference(second, currentBearing))
-    ? first
-    : second;
-}
 
 /** 16-point cardinal name for a bearing, e.g. 337.5 -> "NNW". */
 export function cardinalName(deg: number): string {

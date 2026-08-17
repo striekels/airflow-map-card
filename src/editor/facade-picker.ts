@@ -5,7 +5,7 @@ import leafletCss from 'leaflet/dist/leaflet.css?inline';
 import { MapController } from '../map/leaflet-map';
 import { resolveTiles } from '../map/tiles';
 import { renderFacadeGuide } from '../overlay/facade-guide';
-import { bearingFromDrag, normalizeAngle, pointerBearing } from '../data/bearing';
+import { normalizeAngle, pointerBearing } from '../data/bearing';
 import {
   detectFacadeBearing,
   ringCentre,
@@ -59,8 +59,6 @@ export class FacadePicker extends LitElement {
   @state() private _status = '';
   @state() private _statusKind: 'info' | 'error' = 'info';
   @state() private _snapped = false;
-  /** Guide visibility, so the map can be panned without fighting the handle. */
-  @state() private _guideVisible = true;
   /** Every building the last lookup returned, so any of them can be clicked. */
   @state() private _buildings: BuildingFootprint[] = [];
   @state() private _roads: LatLon[][] = [];
@@ -93,48 +91,24 @@ export class FacadePicker extends LitElement {
                el.style.position before the computed style and will otherwise
                pin its own position: relative, collapsing the map to zero. -->
           <div class="picker-map" style="position: absolute"></div>
-          ${
-            this._guideVisible
-              ? renderFacadeGuide({
-                  facadeBearing: this.bearing,
-                  sidewaysFrom: this.sidewaysFrom,
-                  anchor: [50, 50],
-                  color: 'var(--primary-color, #03a9f4)',
-                  drag: {
-                    active: this._dragging,
-                    onPointerDown: this._onPointerDown,
-                    onPointerMove: this._onPointerMove,
-                    onPointerUp: this._onPointerUp,
-                    onKeyDown: this._onKeyDown,
-                  },
-                })
-              : nothing
-          }
+          ${renderFacadeGuide({
+            facadeBearing: this.bearing,
+            sidewaysFrom: this.sidewaysFrom,
+            anchor: [50, 50],
+            color: 'var(--primary-color, #03a9f4)',
+            drag: {
+              active: this._dragging,
+              onPointerDown: this._onPointerDown,
+              onPointerMove: this._onPointerMove,
+              onPointerUp: this._onPointerUp,
+              onKeyDown: this._onKeyDown,
+            },
+          })}
           <div class="overlay-controls">
             <div class="readout">
               <span class="value">${this.bearing.toFixed(1)}°</span>
               ${this._snapped ? html`<span class="snap">snapped to wall</span>` : nothing}
             </div>
-            <!--
-              The guide's grab handle runs the full width of the map, so it sits
-              in the way of every pan. Hiding it is quicker than fighting it.
-            -->
-            <button
-              class="guide-toggle"
-              aria-pressed=${String(this._guideVisible)}
-              title=${
-                this._guideVisible
-                  ? 'Hide the guide to pan the map freely'
-                  : 'Show the alignment guide'
-              }
-              @click=${() => {
-                this._guideVisible = !this._guideVisible;
-              }}
-            >
-              <ha-icon
-                icon=${this._guideVisible ? 'mdi:eye-off-outline' : 'mdi:eye-outline'}
-              ></ha-icon>
-            </button>
           </div>
         </div>
 
@@ -172,8 +146,8 @@ export class FacadePicker extends LitElement {
               ? html`<strong>Click your house on the map</strong> to use its outline. `
               : nothing
           }
-          Pan the map to your house and press Detect. You can also drag the line to rotate it onto
-          the front of the house, or use the buttons to adjust by 0.1°.
+          Pan the map to your house and press Detect. To adjust, drag the handle at the tip of the
+          guide, or use the buttons for 0.1° steps.
         </p>
       </div>
     `;
@@ -349,7 +323,10 @@ export class FacadePicker extends LitElement {
       event.clientX,
       event.clientY,
     );
-    const raw = bearingFromDrag(pointer, this.bearing);
+    // The handle sits on the outward normal, so the pointer angle *is* the
+    // bearing. This used to grab the wall line, which looks identical from both
+    // ends and needed the previous bearing to decide which end you meant.
+    const raw = normalizeAngle(pointer);
     const snapped = this._shiftHeld ? raw : snapToWalls(raw, this._walls);
 
     this._snapped = snapped !== raw;
@@ -499,20 +476,20 @@ export class FacadePicker extends LitElement {
       overflow: visible;
     }
 
-    .wall-handle {
-      pointer-events: stroke;
+    .facade-handle {
       cursor: grab;
       touch-action: none;
       outline: none;
     }
 
-    .wall-handle.dragging {
+    .facade-handle.dragging {
       cursor: grabbing;
     }
 
-    .wall-handle:focus-visible {
+    .facade-handle:focus-visible {
       stroke: var(--primary-color, #03a9f4);
-      stroke-opacity: 0.35;
+      stroke-width: 1.2;
+      stroke-opacity: 0.9;
     }
 
     .overlay-controls {
@@ -543,32 +520,6 @@ export class FacadePicker extends LitElement {
     .readout .snap {
       font-size: 11px;
       color: var(--primary-color, #03a9f4);
-    }
-
-    .guide-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-      padding: 0;
-      border: none;
-      border-radius: 50%;
-      background: color-mix(in srgb, var(--airflow-surface) 85%, transparent);
-      color: var(--secondary-text-color);
-      cursor: pointer;
-    }
-
-    .guide-toggle[aria-pressed='true'] {
-      color: var(--primary-color, #03a9f4);
-    }
-
-    .guide-toggle:hover {
-      filter: brightness(1.15);
-    }
-
-    .guide-toggle ha-icon {
-      --mdc-icon-size: 18px;
     }
 
     .controls {

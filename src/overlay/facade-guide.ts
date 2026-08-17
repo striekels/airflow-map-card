@@ -34,6 +34,17 @@ export const RADIUS = 46;
 export const WALL_HALF_LENGTH = 200;
 
 /**
+ * The rotation handle, on the outward normal at the rim.
+ *
+ * `HANDLE_R` is what you see, `HANDLE_HIT_R` is what you can hit. The gap is
+ * for touch: a 6.5-unit grip is about 20px at the size the picker renders,
+ * which is fine for a mouse and too small for a thumb.
+ */
+const HANDLE_Y = 6.2;
+const HANDLE_R = 6.5;
+const HANDLE_HIT_R = 11;
+
+/**
  * Overlay for aligning `facade_bearing` with the actual building.
  *
  * Shows three things at once: a wall line to lay along the front of the house,
@@ -52,11 +63,13 @@ export function renderFacadeGuide(options: FacadeGuideOptions): TemplateResult {
   const wallEnd = CENTRE + WALL_HALF_LENGTH;
 
   return html`
-    <div
-      class="guide"
-      aria-hidden="true"
-      style=${styleMap({ left: `${anchor[0]}%`, top: `${anchor[1]}%` })}
-    >
+    <!--
+      Not aria-hidden. It was, which put a focusable slider inside a hidden
+      subtree: invalid, and it hid the one control here that carries meaning.
+      The shapes around it are unlabelled SVG primitives and are ignored by
+      assistive technology on their own.
+    -->
+    <div class="guide" style=${styleMap({ left: `${anchor[0]}%`, top: `${anchor[1]}%` })}>
       <svg
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
@@ -104,6 +117,26 @@ export function renderFacadeGuide(options: FacadeGuideOptions): TemplateResult {
             stroke-dasharray="2.5 2"
           />
 
+        `}
+        ${
+          drag
+            ? svg`
+            <!-- Grip behind the chevron, so the handle looks like something you
+                 can take hold of. Discoverability is the whole point: the
+                 previous handle was invisible and spanned the entire map, so
+                 there was no way to tell a rotate gesture from a pan. -->
+            <circle
+              cx="50" cy=${HANDLE_Y} r=${HANDLE_R}
+              fill=${color}
+              opacity=${drag.active ? '0.34' : '0.18'}
+              stroke=${color}
+              stroke-width="0.7"
+              pointer-events="none"
+            />
+          `
+            : ''
+        }
+        ${svg`
           <!-- Outward normal: this side is the front. -->
           <path
             d="M50 2 L54.5 10.5 L50 8.2 L45.5 10.5 Z"
@@ -111,26 +144,33 @@ export function renderFacadeGuide(options: FacadeGuideOptions): TemplateResult {
             stroke="rgba(255,255,255,0.9)"
             stroke-width="0.9"
             stroke-linejoin="round"
+            pointer-events="none"
           />
         `}
         ${
           drag
             ? svg`
-            <!-- Invisible grab handle along the wall line. Wide enough to hit
-                 on a touch screen, and the only interactive part of the guide
-                 so the map underneath stays pannable. -->
-            <line
-              class=${drag.active ? 'wall-handle dragging' : 'wall-handle'}
-              x1=${wallStart} y1="50" x2=${wallEnd} y2="50"
-              stroke="transparent"
-              stroke-width="9"
-              pointer-events="stroke"
+            <!-- The only interactive part of the guide, and deliberately small
+                 and local: everywhere else the map pans. Drawn last so it wins
+                 hit testing, and larger than the visible grip so it stays
+                 comfortable on a touch screen.
+
+                 It sits on the outward normal rather than on the wall line,
+                 which is what makes the drag unambiguous: a line reads the same
+                 from both ends and needed the previous bearing to disambiguate,
+                 whereas the normal points one way only. -->
+            <circle
+              class=${drag.active ? 'facade-handle dragging' : 'facade-handle'}
+              cx="50" cy=${HANDLE_Y} r=${HANDLE_HIT_R}
+              fill="transparent"
+              pointer-events="all"
               tabindex="0"
               role="slider"
-              aria-label="Facade bearing"
+              aria-label="Direction the front of the house faces"
               aria-valuemin="0"
-              aria-valuemax="359"
+              aria-valuemax="359.9"
               aria-valuenow=${Math.round(facadeBearing)}
+              aria-valuetext=${`${facadeBearing.toFixed(1)} degrees`}
               @pointerdown=${drag.onPointerDown}
               @pointermove=${drag.onPointerMove}
               @pointerup=${drag.onPointerUp}

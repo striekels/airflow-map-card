@@ -9,6 +9,31 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **The alignment guide is now dragged by a visible handle, not by the line.** The grab area
+  used to be an invisible band running the full width of the map, rotating with the bearing,
+  so there was no way to tell where a drag would rotate the guide and where it would pan the
+  map. The handle is a small disc at the tip of the guide, on the outward normal: it is the
+  only interactive part, and everywhere else the map pans.
+
+  Now that Detect sets the bearing, the guide's job is checking and fine-tuning, so a large
+  grab target was buying nothing and costing every pan gesture.
+
+- **The show/hide guide toggle is gone.** It existed only to escape the grab area, and with
+  a handle you can see and avoid there is nothing left to escape.
+
+- Dragging is also simpler to reason about. A handle on the outward normal points one way
+  only, so the pointer angle _is_ the bearing. The wall line looked identical from both ends
+  and needed the previous bearing to work out which end you had grabbed, and that
+  disambiguation, `bearingFromDrag`, is deleted along with its four tests.
+
+### Fixed
+
+- The guide's container was marked `aria-hidden` while containing a focusable slider, which
+  is invalid and hid the one control there that carries meaning. The slider is now reachable,
+  and reports the bearing to a tenth of a degree.
+
 ## [0.4.1] — 2026-08-17
 
 ### Fixed

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   angularDifference,
-  bearingFromDrag,
   cardinalName,
   normalizeAngle,
   parseBearing,
@@ -114,46 +113,14 @@ describe('pointerBearing', () => {
   });
 });
 
-describe('bearingFromDrag', () => {
-  it('puts the facade normal perpendicular to the dragged line', () => {
-    // Dragging to due east gives a wall running east-west, so the normal is
-    // north or south; nearest to a current bearing of 0 is north.
-    expect(bearingFromDrag(90, 0)).toBe(0);
-    expect(bearingFromDrag(90, 180)).toBe(180);
-  });
-
-  it('does not flip front and back when the far end is grabbed', () => {
-    // The two ends of the same line are 180 degrees apart as pointer angles,
-    // but both must resolve to the same facade normal.
-    for (const current of [0, 45, 166.52, 300]) {
-      for (const pointer of [10, 100, 250, 359]) {
-        const nearEnd = bearingFromDrag(pointer, current);
-        const farEnd = bearingFromDrag(normalizeAngle(pointer + 180), current);
-        expect(farEnd).toBe(nearEnd);
-      }
-    }
-  });
-
-  it('always lands within 90 degrees of where the user already was', () => {
-    for (let pointer = 0; pointer < 360; pointer += 7) {
-      for (let current = 0; current < 360; current += 13) {
-        const result = bearingFromDrag(pointer, current);
-        expect(Math.abs(angularDifference(result, current))).toBeLessThanOrEqual(90);
-      }
-    }
-  });
-
-  it('tracks a drag that sweeps all the way round', () => {
-    // Following the pointer continuously must not jump: each 10 degree step of
-    // the pointer moves the bearing by 10 degrees, never 170.
-    let current = 0;
-    for (let pointer = 90; pointer < 90 + 360; pointer += 10) {
-      const next = bearingFromDrag(normalizeAngle(pointer), current);
-      expect(Math.abs(angularDifference(next, current))).toBeLessThanOrEqual(10.0001);
-      current = next;
-    }
-  });
-});
+/*
+ * `bearingFromDrag` was tested here until the guide's handle moved onto the
+ * outward normal. Those four tests all pinned the same thing: that grabbing
+ * either end of a symmetric line resolved to one normal rather than flipping
+ * front and back. A handle on the normal cannot be grabbed from the wrong end,
+ * so the bearing is now just the pointer angle, covered by `pointerBearing`
+ * and `normalizeAngle` above.
+ */
 
 describe('cardinalName', () => {
   it('names the 16 compass points', () => {
