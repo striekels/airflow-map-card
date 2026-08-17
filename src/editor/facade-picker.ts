@@ -22,6 +22,7 @@ import {
 } from '../data/overpass';
 import { capturePointer, fireEvent } from '../data/actions';
 import { DEFAULT_SIDEWAYS_FROM } from '../data/airflow';
+import { DEFAULT_ZOOM } from '../const';
 import type { HomeAssistant } from '../ha-types';
 
 /**
@@ -33,6 +34,18 @@ import type { HomeAssistant } from '../ha-types';
  * that survives a round trip through the config.
  */
 const NUDGE_STEP = 0.1;
+
+/**
+ * How long Detect stays disabled after a lookup, in seconds.
+ *
+ * Overpass is a donated service and rate-limits hard: two presses in quick
+ * succession come back 429, which the card reports as "the service is busy".
+ * That reads as the service being broken when it is really us asking twice, and
+ * it was hit repeatedly both during development and while debugging against the
+ * live endpoint. Five seconds is long enough to stop accidental double presses
+ * without being noticed by anyone working deliberately.
+ */
+const COOLDOWN_SECONDS = 5;
 
 /**
  * Interactive facade alignment, for use inside the card editor.
@@ -51,11 +64,14 @@ export class FacadePicker extends LitElement {
   @property({ type: Number }) latitude = 0;
   @property({ type: Number }) longitude = 0;
   @property({ type: Number }) bearing = 0;
+  @property({ type: Number }) zoom = DEFAULT_ZOOM;
   @property({ type: Number }) sidewaysFrom = DEFAULT_SIDEWAYS_FROM;
 
   @state() private _walls: WallEdge[] = [];
   @state() private _dragging = false;
   @state() private _busy = false;
+  /** Seconds left before Detect can be pressed again. */
+  @state() private _cooldown = 0;
   @state() private _status = '';
   @state() private _statusKind: 'info' | 'error' = 'info';
   @state() private _snapped = false;
@@ -74,11 +90,14 @@ export class FacadePicker extends LitElement {
 
   private _map?: MapController;
   private _abort?: AbortController;
+  private _cooldownTimer?: number;
   private _shiftHeld = false;
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._abort?.abort();
+    window.clearInterval(this._cooldownTimer);
+    this._cooldownTimer = undefined;
     this._map?.destroy();
     this._map = undefined;
   }
@@ -113,8 +132,19 @@ export class FacadePicker extends LitElement {
         </div>
 
         <div class="controls">
-          <button class="primary" ?disabled=${this._busy} @click=${this._detect}>
-            ${this._busy ? 'Looking up…' : 'Detect from OpenStreetMap'}
+          <button
+            class="primary"
+            ?disabled=${this._busy || this._cooldown > 0}
+            @click=${this._detect}
+          >
+            ${this._busy ? html`<span class="spinner" aria-hidden="true"></span>` : nothing}
+            ${
+              this._busy
+                ? 'Looking up…'
+                : this._cooldown > 0
+                  ? `Detect again in ${this._cooldown}s`
+                  : 'Detect from OpenStreetMap'
+            }
           </button>
           <button
             class="nudge"
@@ -153,13 +183,23 @@ export class FacadePicker extends LitElement {
     `;
   }
 
+  /**
+   * The view last pushed *into* the map from the configuration.
+   *
+   * The map is pannable and zoomable, so its live view and the config stop
+   * agreeing as soon as the user touches it. Re-applying the config on every
+   * render would yank the map back and undo that, so the map is only moved when
+   * the incoming values differ from what we last applied, which is to say when
+   * something outside the map changed them.
+   */
+  private _appliedView?: { latitude: number; longitude: number; zoom: number };
+
   override updated(): void {
     if (!this._mapElement || !this.hass) return;
 
+    const view = { latitude: this.latitude, longitude: this.longitude, zoom: this.zoom };
     const options = {
-      latitude: this.latitude,
-      longitude: this.longitude,
-      zoom: 19,
+      ...view,
       // Pannable so the building can be brought into view when the configured
       // point is slightly off.
       interactive: true,
@@ -170,9 +210,46 @@ export class FacadePicker extends LitElement {
       tiles: resolveTiles({ theme: 'light' }, false),
     };
 
-    if (!this._map) this._map = new MapController(this._mapElement);
+    if (!this._map) {
+      this._map = new MapController(this._mapElement);
+      this._map.init(options);
+      this._map.onZoomEnd(this._zoomEnded);
+      this._appliedView = view;
+      return;
+    }
+
+    const applied = this._appliedView;
+    if (
+      applied &&
+      applied.latitude === view.latitude &&
+      applied.longitude === view.longitude &&
+      applied.zoom === view.zoom
+    ) {
+      return;
+    }
+
     this._map.init(options);
+    this._appliedView = view;
   }
+
+  /**
+   * Persist the zoom the user settled on.
+   *
+   * The picker used to open at a hardcoded zoom 19 and never report back, so
+   * however carefully the map was framed the card rendered at whatever stale
+   * `zoom` the config happened to hold.
+   */
+  private _zoomEnded = (): void => {
+    const zoom = this._map?.getZoom();
+    if (zoom == null || zoom === this.zoom) return;
+
+    // Record it as applied before emitting. The editor writes it to the config
+    // and hands it straight back as a property, and without this that arrives
+    // looking like an external change and re-centres the map, throwing away any
+    // panning the user did on the way.
+    if (this._appliedView) this._appliedView.zoom = zoom;
+    fireEvent(this, 'zoom-changed', { zoom });
+  };
 
   // ------------------------------------------------------------- detection
 
@@ -227,7 +304,17 @@ export class FacadePicker extends LitElement {
       this._fail(error instanceof OverpassError ? error.message : 'OpenStreetMap lookup failed.');
     } finally {
       this._busy = false;
+      this._startCooldown();
     }
+  }
+
+  private _startCooldown(): void {
+    window.clearInterval(this._cooldownTimer);
+    this._cooldown = COOLDOWN_SECONDS;
+    this._cooldownTimer = window.setInterval(() => {
+      this._cooldown -= 1;
+      if (this._cooldown <= 0) window.clearInterval(this._cooldownTimer);
+    }, 1000);
   }
 
   /**
@@ -520,6 +607,36 @@ export class FacadePicker extends LitElement {
     .readout .snap {
       font-size: 11px;
       color: var(--primary-color, #03a9f4);
+    }
+
+    /*
+     * A lookup can take several seconds against a busy Overpass, and a button
+     * that only changes its label reads as a button that did not respond.
+     */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      vertical-align: -2px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      opacity: 0.85;
+      animation: airflow-spin 0.7s linear infinite;
+    }
+
+    @keyframes airflow-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Motion is decoration here; the label already says what is happening. */
+    @media (prefers-reduced-motion: reduce) {
+      .spinner {
+        animation-duration: 2.4s;
+      }
     }
 
     .controls {

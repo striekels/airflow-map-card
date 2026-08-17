@@ -15,6 +15,8 @@
  * starts writing settings one level too deep. See editor-schema.test.ts.
  */
 
+import type { AirflowMapCardConfig } from '../types';
+
 export type RowKind = 'source' | 'entity' | 'template';
 
 /**
@@ -48,7 +50,20 @@ export const EXACT_HOUSE_SCHEMA = [
   },
 ];
 
-export function cardSchema(): unknown[] {
+/**
+ * Fields that do nothing in the current mode are left out rather than shown
+ * inert. A control that is visible, editable and ignored is worse than one that
+ * is absent: it invites you to set it and then silently disagrees with whatever
+ * is actually deciding the outcome.
+ */
+export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[] {
+  const arrowColorMode = config.arrow?.color_mode ?? 'airflow';
+  const airflowMode = config.airflow?.mode ?? 'compute';
+  // `tile_url` overrides the basemap preset wherever it is set, so it is only
+  // offered under the Custom option. Configs written before that option existed
+  // keep it visible, otherwise the field that is winning would be unreachable.
+  const showTileUrl = config.map?.tiles === 'custom' || Boolean(config.map?.tile_url);
+
   return [
     {
       name: 'wind',
@@ -86,7 +101,7 @@ export function cardSchema(): unknown[] {
             },
           },
         },
-        { name: 'entity', selector: { entity: {} } },
+        ...(airflowMode === 'entity' ? [{ name: 'entity', selector: { entity: {} } }] : []),
         {
           type: 'grid',
           schema: [
@@ -129,7 +144,7 @@ export function cardSchema(): unknown[] {
                     },
                   },
                 },
-                { name: 'color', selector: { text: {} } },
+                ...(arrowColorMode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
                 { name: 'show_gust', selector: { boolean: {} } },
                 { name: 'hide', selector: { boolean: {} } },
               ],
@@ -155,6 +170,7 @@ export function cardSchema(): unknown[] {
                         { value: 'osm', label: 'OpenStreetMap (light)' },
                         { value: 'carto-light', label: 'CARTO light' },
                         { value: 'carto-dark', label: 'CARTO dark' },
+                        { value: 'custom', label: 'Custom tile URL' },
                       ],
                     },
                   },
@@ -165,7 +181,7 @@ export function cardSchema(): unknown[] {
                 { name: 'height', selector: { number: { min: 100, max: 1000, mode: 'box' } } },
               ],
             },
-            { name: 'tile_url', selector: { text: {} } },
+            ...(showTileUrl ? [{ name: 'tile_url', selector: { text: {} } }] : []),
           ],
         },
       ],

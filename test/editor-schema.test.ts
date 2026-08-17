@@ -43,7 +43,13 @@ function leafPaths(schema: Item[], prefix: string[] = []): Record<string, string
 }
 
 describe('cardSchema', () => {
-  const paths = leafPaths(cardSchema() as Item[]);
+  const paths = leafPaths(
+    cardSchema({
+      arrow: { color_mode: 'fixed' },
+      airflow: { mode: 'entity' },
+      map: { tiles: 'custom' },
+    }) as Item[],
+  );
 
   it('keeps the card title at the top level despite living in the Appearance panel', () => {
     expect(paths.title).toEqual([['title']]);
@@ -76,6 +82,41 @@ describe('cardSchema', () => {
   it('exposes exactly the wind, airflow and appearance groups', () => {
     const titles = (cardSchema() as Item[]).map((item) => item.title);
     expect(titles).toEqual(['Wind source', 'Airflow classification', 'Appearance']);
+  });
+
+  describe('fields that would be inert are left out', () => {
+    // Each of these was visible and editable in every mode while only taking
+    // effect in one, so setting it looked like it worked and changed nothing.
+    const named = (config: Parameters<typeof cardSchema>[0]) =>
+      Object.keys(leafPaths(cardSchema(config) as Item[]));
+
+    it('offers the arrow colour only when the colour mode is fixed', () => {
+      expect(named({ arrow: { color_mode: 'fixed' } })).toContain('color');
+      expect(named({ arrow: { color_mode: 'airflow' } })).not.toContain('color');
+      expect(named({})).not.toContain('color');
+    });
+
+    it('offers the airflow entity only when the mode reads from one', () => {
+      expect(named({ airflow: { mode: 'entity' } })).toContain('entity');
+      // `entity` still exists under wind, so check the airflow path specifically.
+      expect(leafPaths(cardSchema({ airflow: { mode: 'compute' } }) as Item[]).entity).toEqual([
+        ['wind', 'entity'],
+      ]);
+    });
+
+    it('offers a custom tile URL only when the basemap is set to custom', () => {
+      expect(named({ map: { tiles: 'custom' } })).toContain('tile_url');
+      expect(named({ map: { tiles: 'osm' } })).not.toContain('tile_url');
+    });
+
+    it('keeps a tile URL reachable when an older config already set one', () => {
+      // Before the Custom option existed a `tile_url` could be saved against any
+      // preset, and it wins over the preset. Hiding it would leave the setting
+      // that is actually deciding the basemap impossible to see or clear.
+      expect(
+        named({ map: { tiles: 'osm', tile_url: 'https://example.com/{z}/{x}/{y}.png' } }),
+      ).toContain('tile_url');
+    });
   });
 });
 

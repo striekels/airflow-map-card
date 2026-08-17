@@ -45,7 +45,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
         <ha-form
           .hass=${this.hass}
           .data=${this._formData}
-          .schema=${cardSchema()}
+          .schema=${cardSchema(this._config)}
           .computeLabel=${this._computeLabel}
           @value-changed=${this._formChanged}
         ></ha-form>
@@ -78,14 +78,14 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
               .label=${'Search an address'}
               .value=${this._addressQuery}
               @input=${(event: Event) => {
-              this._addressQuery = (event.target as HTMLInputElement).value;
-            }}
+                this._addressQuery = (event.target as HTMLInputElement).value;
+              }}
               @keydown=${(event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void this._searchAddress();
-              }
-            }}
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void this._searchAddress();
+                }
+              }}
             ></ha-textfield>
             <button
               class="primary"
@@ -97,25 +97,27 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             <button class="secondary" @click=${this._useHomeLocation}>Use home</button>
           </div>
           ${
-          this._geocodeError
-            ? html`<ha-alert alert-type="error">${this._geocodeError}</ha-alert>`
-            : nothing
-        }
+            this._geocodeError
+              ? html`<ha-alert alert-type="error">${this._geocodeError}</ha-alert>`
+              : nothing
+          }
           ${
-          latitude === undefined || longitude === undefined
-            ? html`<p class="hint">Search for an address above to place the map.</p>`
-            : html`
-                <airflow-facade-picker
-                  .hass=${this.hass}
-                  .latitude=${latitude}
-                  .longitude=${longitude}
-                  .bearing=${this._config.house?.facade_bearing ?? 0}
-                  .sidewaysFrom=${this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM}
-                  @bearing-changed=${this._bearingChanged}
-                  @location-changed=${this._locationChanged}
-                ></airflow-facade-picker>
-              `
-        }
+            latitude === undefined || longitude === undefined
+              ? html`<p class="hint">Search for an address above to place the map.</p>`
+              : html`
+                  <airflow-facade-picker
+                    .hass=${this.hass}
+                    .latitude=${latitude}
+                    .longitude=${longitude}
+                    .bearing=${this._config.house?.facade_bearing ?? 0}
+                    .zoom=${location.zoom ?? DEFAULT_ZOOM}
+                    .sidewaysFrom=${this._config.airflow?.sideways_from ?? DEFAULT_SIDEWAYS_FROM}
+                    @bearing-changed=${this._bearingChanged}
+                    @location-changed=${this._locationChanged}
+                    @zoom-changed=${this._zoomChanged}
+                  ></airflow-facade-picker>
+                `
+          }
 
           <ha-expansion-panel
             outlined
@@ -162,6 +164,12 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     if (latitude === undefined || longitude === undefined) return 'Home Assistant home location';
     const coords = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
     return bearing === undefined ? coords : `${coords} · facade ${bearing.toFixed(1)}°`;
+  }
+
+  /** The picker's map is the card's map, so the level chosen there is the one saved. */
+  private _zoomChanged(event: CustomEvent<{ zoom: number }>): void {
+    event.stopPropagation();
+    this._updateConfig({ location: { ...this._config.location, zoom: event.detail.zoom } });
   }
 
   private _exactLocationChanged(event: CustomEvent<{ value: LocationConfig }>): void {

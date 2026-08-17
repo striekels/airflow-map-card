@@ -30,6 +30,7 @@ export class MapController {
   private footprints?: L.LayerGroup;
   private resizeObserver?: ResizeObserver;
   private current?: MapOptions;
+  private zoomListener?: () => void;
 
   constructor(private readonly container: HTMLElement) {}
 
@@ -122,6 +123,22 @@ export class MapController {
     return { lat: centre.lat, lon: centre.lng };
   }
 
+  /** Live zoom, for the same reason as `getCentre`. */
+  getZoom(): number | null {
+    return this.map ? this.map.getZoom() : null;
+  }
+
+  /**
+   * Called after the user finishes zooming, so a picker can persist the level
+   * the user actually chose rather than the one it was opened with.
+   */
+  onZoomEnd(listener: () => void): void {
+    if (!this.map) return;
+    if (this.zoomListener) this.map.off('zoomend', this.zoomListener);
+    this.zoomListener = listener;
+    this.map.on('zoomend', listener);
+  }
+
   /**
    * Outline candidate buildings on the map, labelled and clickable.
    *
@@ -176,6 +193,8 @@ export class MapController {
   destroy(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
+    if (this.zoomListener) this.map?.off('zoomend', this.zoomListener);
+    this.zoomListener = undefined;
     this.map?.remove();
     this.map = undefined;
     this.layer = undefined;

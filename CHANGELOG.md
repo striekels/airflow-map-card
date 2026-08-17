@@ -9,7 +9,26 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Added
+
+- **Detect shows a spinner while it is working.** A lookup can take several seconds against a
+  busy Overpass, and a button that only changed its label read as a button that had not
+  responded.
+
 ### Changed
+
+- **Detect is disabled for five seconds after a lookup, with a countdown on the button.**
+  Overpass is a donated service and rate-limits hard: two presses in quick succession come
+  back `429`, which the card reported as the service being busy. That reads as OpenStreetMap
+  being broken when it is really us asking twice, and it was hit repeatedly both in
+  development and while debugging against the live endpoint.
+
+- **Fields that do nothing in the current mode are no longer shown.** `arrow.color` appears
+  only when the colour mode is fixed, the airflow entity only when the mode reads from one,
+  and `tile_url` only under a new **Custom tile URL** basemap option. `tile_url` silently
+  overrode the Basemap dropdown directly above it, which is an ambush rather than a setting.
+  A config that already carries a `tile_url` keeps the field visible, so the value actually
+  deciding the basemap can still be seen and cleared.
 
 - **The alignment guide is now dragged by a visible handle, not by the line.** The grab area
   used to be an invisible band running the full width of the map, rotating with the bearing,
@@ -29,6 +48,15 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
   disambiguation, `bearingFromDrag`, is deleted along with its four tests.
 
 ### Fixed
+
+- **The editor's map now saves the zoom you framed it at.** The picker opened at a hardcoded
+  zoom 19 and never reported back, so however carefully you framed the map the card rendered
+  at whatever stale `zoom` the config happened to hold. It now opens at the configured level
+  and saves the one you settle on, which also means zooming in to align the guide fixes a
+  stale value as a side effect.
+
+  Panning still does not move the card: the position is set by Detect or by clicking a
+  building, deliberately, so that looking around is free.
 
 - The guide's container was marked `aria-hidden` while containing a focusable slider, which
   is invalid and hid the one control there that carries meaning. The slider is now reachable,
