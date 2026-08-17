@@ -9,6 +9,25 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Detect from OpenStreetMap failed inside Home Assistant, reporting that the service could
+  not be reached.** Overpass sits behind Apache rules that reject a request carrying a
+  browser `User-Agent` with no `Referer`, which is ordinary anti-scraping. Apache answers
+  `406` before Overpass sees the request, and that response carries no
+  `Access-Control-Allow-Origin`, so the browser cannot show the 406 and reports an opaque
+  CORS failure instead.
+
+  Home Assistant serves `Referrer-Policy: no-referrer` on every page, so every request from
+  a card arrived without a Referer and was rejected. A card cannot compensate by setting
+  `User-Agent`, which is a forbidden header, so the lookup now sets an explicit referrer
+  policy of `origin`. That sends the Home Assistant origin, never the path.
+
+  Reproduced deterministically with the URL and all other headers held constant: a browser
+  user agent without a Referer gives 406, the same request with one gives 200.
+
+  This supersedes the diagnosis in 0.3.1, which described a real 406 but not this one.
+
 ## [0.4.0] — 2026-08-15
 
 ### Changed

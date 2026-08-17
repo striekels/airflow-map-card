@@ -72,6 +72,14 @@ blank card.
 for building outlines. One request per button press, result stored in the config as plain
 numbers. Nothing is ever fetched while the card is running. Do not add runtime lookups.
 
+**Overpass needs `referrerPolicy: 'origin'`, and nothing local will tell you so.** Its
+Apache rejects a browser `User-Agent` with no `Referer`, answering 406 with no
+`Access-Control-Allow-Origin`, which the browser reports as an opaque CORS failure. Home
+Assistant serves `Referrer-Policy: no-referrer`, so a card is refererless by default;
+`User-Agent` cannot be set from a page at all. This reproduces only inside Home Assistant,
+never in the dev harness or the tests, which is why `test/overpass.test.ts` asserts the
+option is present.
+
 **A nameless `ha-form` group is a pass-through, and that is load-bearing.** `ha-form` decides
 nesting from the schema, using
 

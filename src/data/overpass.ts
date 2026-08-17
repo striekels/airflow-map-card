@@ -89,20 +89,34 @@ export async function fetchFootprints(
 
     let response: Response;
     try {
-      // GET, not POST, and deliberately.
-      //
-      // A POST whose Content-Type Overpass does not accept is answered with
-      // 406 and *no* Access-Control-Allow-Origin header, so the browser
-      // surfaces it as an opaque CORS failure rather than as the rejection it
-      // is. That was reproduced directly: text/plain gives 406 with no CORS
-      // header, form-urlencoded gives 200, GET gives 200. GET has no request
-      // body at all, so there is no content type to negotiate and no preflight,
-      // which removes the entire class of failure.
-      //
-      // The query is a couple of hundred characters, nowhere near any URL
-      // length limit.
+      // GET, not POST, and deliberately. A POST whose Content-Type Overpass
+      // does not accept is answered with 406, and GET has no body to negotiate
+      // and needs no preflight. The query is a couple of hundred characters,
+      // nowhere near any URL length limit.
       const url = `${ENDPOINT}?${new URLSearchParams({ data: query }).toString()}`;
-      response = await fetch(url, { method: 'GET', signal });
+
+      // `referrerPolicy` is what makes this work from inside Home Assistant,
+      // and it is not optional.
+      //
+      // Overpass sits behind Apache rules that reject a request carrying a
+      // browser User-Agent with no Referer, which is ordinary anti-scraping.
+      // Apache answers 406 before Overpass sees the request, and that response
+      // has no Access-Control-Allow-Origin header, so the browser cannot show
+      // the 406 and reports an opaque CORS failure instead.
+      //
+      // Home Assistant serves `Referrer-Policy: no-referrer` on every page, so
+      // without this every request from a card arrives refererless and is
+      // rejected. A card cannot set User-Agent instead: it is a forbidden
+      // header. Reproduced directly against the service, holding everything
+      // else constant: browser UA without Referer gives 406, the same request
+      // with a Referer gives 200.
+      //
+      // 'origin' sends the origin only and never the path. That does disclose
+      // the Home Assistant origin to overpass-api.de, which is a deliberate
+      // trade: the service already receives the user's IP address and the
+      // coordinates of their house, so the hostname adds little, and the
+      // feature does not work at all without it.
+      response = await fetch(url, { method: 'GET', referrerPolicy: 'origin', signal });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
       // A thrown fetch is a network-level failure: DNS, TLS, an extension, or a

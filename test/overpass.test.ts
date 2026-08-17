@@ -115,6 +115,23 @@ describe('fetchFootprints', () => {
     expect(decodeURIComponent(String(url))).toContain('["building"]');
   });
 
+  it('sends a referrer, without which the service rejects the request', async () => {
+    // Overpass's Apache rejects a browser User-Agent carrying no Referer with a
+    // 406 that has no Access-Control-Allow-Origin header, so the browser
+    // reports an opaque CORS failure and the 406 is never visible. Home
+    // Assistant serves `Referrer-Policy: no-referrer`, so every request from a
+    // card is refererless unless this option overrides it, and User-Agent
+    // cannot be set from a page at all.
+    //
+    // None of that is reproducible in a test environment, which is exactly why
+    // it is pinned here: deleting the option breaks the feature in Home
+    // Assistant while every test and the dev harness keep passing.
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    await fetchFootprints(12.1, 22.1);
+
+    expect(fetchMock.mock.calls[0][1]?.referrerPolicy).toBe('origin');
+  });
+
   it('retries a transient overload and succeeds', async () => {
     // Measured against the live service: a 504 is routinely followed by a 200
     // seconds later, which is why retrying beats failing the user immediately.

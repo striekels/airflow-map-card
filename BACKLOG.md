@@ -18,40 +18,40 @@ Still to do before the repository goes public: nothing blocking — the test fix
 sanitised (see Distribution) — but the HACS validation job needs a release to validate
 against, so tag `v0.2.1` before running it.
 
-### 0.15 Detect returns 406 from some browsers — **unresolved**
+### 0.15 Detect returns 406 from Home Assistant — **resolved**
 
-`overpass-api.de` answers with `406 Not Acceptable` and no `Access-Control-Allow-Origin`
-header for at least one real user's browser, so the browser reports it as an opaque CORS
-failure. Reproduced by that user with both POST and GET, from `http://ha.local:8123` in
-Chrome.
+**Cause: the missing `Referer` header.** Overpass sits behind Apache rules that reject a
+request carrying a browser `User-Agent` with no `Referer`, which is ordinary anti-scraping.
+Apache answers 406 before Overpass sees the request, and that response has no
+`Access-Control-Allow-Origin`, so the browser cannot surface the 406 and reports an opaque
+CORS failure instead.
 
-What is established:
+Home Assistant serves `Referrer-Policy: no-referrer` on every page, so every request from a
+card arrived refererless. A card cannot compensate by setting `User-Agent`: it is a
+forbidden header. Fixed by passing `referrerPolicy: 'origin'` to the `fetch`.
 
-- Not a content-security policy. The CORS message is a consequence of the 406: Overpass
-  omits the CORS header on error responses.
-- Not the `Origin` header. Overpass returns `Access-Control-Allow-Origin: *` for a
-  plain-HTTP origin such as `http://ha.local:8123`.
-- Not `+` versus `%20` for spaces in the query string. Both return 200 from curl.
-- The identical URL returns 200 from curl, including with a full browser header set.
+Reproduced deterministically from the affected machine and network, holding the URL and
+every other header constant:
 
-What is **not** established: one curl run reproduced 406 using a Chrome user agent without
-an `Origin` header, but the service was returning 504s in the same batch, so that result is
-unsound and was not repeated. The switch from POST to GET in 0.3.1 was made on a theory
-that later evidence undermined; GET is still the better shape, but it did not fix this.
+| Request                    | Result  |
+| -------------------------- | ------- |
+| curl's own UA              | 200     |
+| browser UA, no `Referer`   | **406** |
+| browser UA, with `Referer` | 200     |
 
-Next steps, cheapest first:
+Two earlier theories were wrong and are recorded so they are not retried. The 0.3.1
+POST/content-type diagnosis describes a real 406 but not this one. Browser extensions and
+shields were also wrong: the request was never blocked locally, and `transferSize: 0` with
+`ERR_FAILED 406` in the affected browser confirms the response came from the server.
 
-- Try a different Overpass instance from the affected browser. If a mirror works, the
-  problem is specific to `overpass-api.de` and a **user-configurable endpoint** is the fix,
-  mirroring how `map.tile_url` already works.
-- Check whether anything between that browser and the internet intercepts requests: a
-  filtering DNS resolver, antivirus web shield, or browser extension can all return 406.
-- Failing both, fall back to manual alignment for affected users and say so plainly in the
-  error rather than implying OpenStreetMap is unreachable.
+Worth remembering as a method note: an earlier curl run _had_ reproduced the 406 with a
+browser user agent and was discarded as unsound because the service was returning 504s in
+the same batch. The observation was correct and the dismissal cost several rounds. When a
+result is suspected of being noise, re-run it rather than setting it aside.
 
 ### 0.2 Match the road by `addr:street`, not just proximity — **bug in waiting**
 
-`detectFacadeBearing` faces the wall towards the *nearest* road. On a corner plot the
+`detectFacadeBearing` faces the wall towards the _nearest_ road. On a corner plot the
 nearest road is frequently the side street, so the detected facade is the side of the house.
 
 OSM already gives us both halves of the fix, in data we are fetching anyway: buildings carry
@@ -120,16 +120,16 @@ and would have clipped the overrun.
 Original analysis, kept for context — weights in a 100-unit viewBox rendered at roughly
 250px (so ~2.5px per unit):
 
-| Element | Now | Rendered | Problem |
-|---|---|---|---|
+| Element   | Now                                  | Rendered          | Problem                                                                                                      |
+| --------- | ------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------ |
 | Wall line | `stroke-width: 2` + `4.2` white halo | ~5px + ~10px halo | The halo alone is wider than a roof ridge at zoom 18. You cannot tell which side of the line the wall is on. |
-| Rim arc | `1.8` | ~4.5px | Fine, but competes with the wall line. |
-| Chevron | 12 units tall | ~30px | Reads as decoration, not a marker. |
+| Rim arc   | `1.8`                                | ~4.5px            | Fine, but competes with the wall line.                                                                       |
+| Chevron   | 12 units tall                        | ~30px             | Reads as decoration, not a marker.                                                                           |
 
 Changes:
 
 - Drop the wall line to a **hairline** (~0.6 units, ~1.5px) with a 1.5-unit halo, so it
-  sits *on* the roofline instead of covering it.
+  sits _on_ the roofline instead of covering it.
 - **Extend the wall line edge to edge** across the whole map area rather than stopping at
   the guide circle. A long line is far easier to sight along — misalignment shows up at
   the ends, which is exactly where the current line stops.
@@ -148,7 +148,7 @@ the editor map, and a dragged guide snaps to wall normals within 8°.
 
 Remaining rough edges:
 
-- Detection needs the location to be *inside* the building. When it is not, the nearest
+- Detection needs the location to be _inside_ the building. When it is not, the nearest
   building is used and the status says so in red, but a location picker (2.5) would prevent
   the situation instead of reporting it.
 - Overpass rate-limits aggressively. Two presses in quick succession get a 429 and the
@@ -168,7 +168,7 @@ edit-dialog preview do not reach the editor element. Persistence therefore goes 
 `facade_bearing_entity` (`set_value` on an `input_number`/`number`); without one the value
 is session-only and the readout says so.
 
-Resolved in 0.2.0: alignment moved into the editor, which *can* write config, so no helper
+Resolved in 0.2.0: alignment moved into the editor, which _can_ write config, so no helper
 entity is needed. View-mode dragging now requires a settable `facade_bearing_entity`, so
 the "copy this number by hand" dead end no longer exists.
 
@@ -214,7 +214,7 @@ accumulator advances. Move to `willUpdate`.
 ### 2.5 Editor cannot pick a location on the map — now the weakest link
 
 Address search plus lat/lon boxes work, but there is still no draggable pin. This matters
-more since 0.2.0: facade detection depends on the configured point falling *inside* your
+more since 0.2.0: facade detection depends on the configured point falling _inside_ your
 building, and a pin would make that trivially checkable. The editor already renders a
 Leaflet map in the facade picker, so the remaining work is a marker and a drag handler.
 
@@ -285,8 +285,8 @@ card — the current card answers "which way is the wind blowing", and leaves th
 the last step themselves.
 
 The fuller version combines the airflow bucket with indoor and outdoor temperature (and CO2,
-if there is a sensor) into a plain verdict: *good time to ventilate*, *too warm outside*,
-*not enough wind*. That is a different and more opinionated card, so it deserves a decision
+if there is a sensor) into a plain verdict: _good time to ventilate_, _too warm outside_,
+_not enough wind_. That is a different and more opinionated card, so it deserves a decision
 rather than being slipped in: it changes the product from an instrument into an adviser.
 
 ### 5.4 Wind history sparkline
