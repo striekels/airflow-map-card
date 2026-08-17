@@ -258,25 +258,13 @@ export class HaForm extends LitElement {
   `;
 }
 
-@customElement('ha-textfield')
-export class HaTextfield extends LitElement {
-  @property() label = '';
-  @property() value = '';
-
-  override createRenderRoot(): HTMLElement {
-    return this as unknown as HTMLElement; // light DOM: event.target is the inner input
-  }
-
-  override render(): TemplateResult {
-    return html`
-      <input
-        placeholder=${this.label}
-        .value=${this.value}
-        style="font:inherit;padding:8px;border:1px solid #ccc;border-radius:4px;width:100%;box-sizing:border-box"
-      />
-    `;
-  }
-}
+/*
+ * There was an `ha-textfield` stub here. It is gone because the editor no
+ * longer uses that element, and the stub was actively harmful: it rendered a
+ * working input in the harness while the real element was not registered in
+ * Home Assistant, so the search field was missing in production and present
+ * here. A stub for an element we do not use hides exactly that class of bug.
+ */
 
 @customElement('ha-icon')
 export class HaIcon extends LitElement {

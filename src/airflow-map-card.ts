@@ -1,16 +1,8 @@
-import {
-  LitElement,
-  css,
-  html,
-  nothing,
-  unsafeCSS,
-  type PropertyValues,
-  type TemplateResult,
-} from 'lit';
+import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import leafletCss from 'leaflet/dist/leaflet.css?inline';
+import { leafletStyles } from './map/leaflet-styles';
 
 import { CARD_TYPE, CARD_VERSION, DEFAULT_ARROW_SIZE, DEFAULT_ZOOM, EDITOR_TYPE } from './const';
 import type { HomeAssistant } from './ha-types';
@@ -383,7 +375,7 @@ export class AirflowMapCard extends LitElement {
   }
 
   static override styles = css`
-    ${unsafeCSS(leafletCss)}
+    ${leafletStyles}
 
     :host {
       display: block;

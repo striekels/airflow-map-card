@@ -74,8 +74,19 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
         <ha-icon slot="leading-icon" icon="mdi:map-marker"></ha-icon>
         <div class="panel-content">
           <div class="address-row">
-            <ha-textfield
-              .label=${'Search an address'}
+            <!--
+              A native input, for the same reason the buttons below are native.
+              This was an ha-textfield, which is a Material Web Component; where
+              that is not registered in the editor's context it renders as an
+              empty inline box that still takes up its share of the row, so the
+              search field was simply missing while the buttons beside it looked
+              fine. An input that is invisible is worse than one that is plain.
+            -->
+            <input
+              class="address-input"
+              type="text"
+              aria-label="Search an address"
+              placeholder="Search an address"
               .value=${this._addressQuery}
               @input=${(event: Event) => {
                 this._addressQuery = (event.target as HTMLInputElement).value;
@@ -86,7 +97,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
                   void this._searchAddress();
                 }
               }}
-            ></ha-textfield>
+            />
             <button
               class="primary"
               ?disabled=${this._geocoding || this._addressQuery.trim() === ''}
@@ -447,8 +458,27 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       flex-wrap: wrap;
     }
 
-    .address-row ha-textfield {
+    .address-input {
       flex: 1 1 200px;
+      min-width: 0;
+      font: inherit;
+      padding: 8px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      /* Inherit the dashboard's colours: the editor is themed, and a hardcoded
+         white field is unreadable on a dark dashboard. */
+      background: var(--card-background-color, transparent);
+      color: var(--primary-text-color);
+    }
+
+    .address-input::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 1;
+    }
+
+    .address-input:focus-visible {
+      outline: 2px solid var(--primary-color, #03a9f4);
+      outline-offset: -1px;
     }
 
     .hint {

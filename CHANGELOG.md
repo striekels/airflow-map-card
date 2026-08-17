@@ -49,6 +49,19 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ### Fixed
 
+- **The address search box was missing entirely in Home Assistant.** It was an
+  `ha-textfield`, a Material Web Component, and where that is not registered in the editor's
+  context it renders as an empty inline box that still takes up its share of the row. The
+  Search and Use home buttons beside it looked fine, so the field read as absent by design
+  rather than broken. It is now a native input, which is why the buttons next to it are
+  native too.
+
+- **Dragging the map could select text instead.** Leaflet marks only its tiles and markers
+  unselectable, and its runtime suppression starts only once a map drag has begun, so a press
+  landing on the attribution line or a zoom button selected that text and dragged a highlight
+  across the corner of the card. The map container is now unselectable as a whole, in both
+  the card and the editor.
+
 - **The editor's map now saves the zoom you framed it at.** The picker opened at a hardcoded
   zoom 19 and never reported back, so however carefully you framed the map the card rendered
   at whatever stale `zoom` the config happened to hold. It now opens at the configured level

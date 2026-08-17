@@ -1,6 +1,6 @@
-import { LitElement, css, html, nothing, unsafeCSS, type TemplateResult } from 'lit';
+import { LitElement, css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import leafletCss from 'leaflet/dist/leaflet.css?inline';
+import { leafletStyles } from '../map/leaflet-styles';
 
 import { MapController } from '../map/leaflet-map';
 import { resolveTiles } from '../map/tiles';
@@ -453,7 +453,7 @@ export class FacadePicker extends LitElement {
   }
 
   static override styles = css`
-    ${unsafeCSS(leafletCss)}
+    ${leafletStyles}
 
     :host {
       /*
@@ -567,6 +567,9 @@ export class FacadePicker extends LitElement {
       cursor: grab;
       touch-action: none;
       outline: none;
+      /* Same reason as the map: a drag from here must not start a selection. */
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .facade-handle.dragging {
