@@ -9,6 +9,8 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-08-18
+
 ### Added
 
 - **Detect shows a spinner while it is working.** A lookup can take several seconds against a
@@ -400,7 +402,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.4.1...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/striekels/airflow-map-card/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/striekels/airflow-map-card/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/striekels/airflow-map-card/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/striekels/airflow-map-card/compare/v0.3.3...v0.3.4

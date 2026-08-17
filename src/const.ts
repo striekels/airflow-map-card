@@ -1,4 +1,4 @@
-export const CARD_VERSION = '0.4.1';
+export const CARD_VERSION = '0.4.2';
 export const CARD_TYPE = 'airflow-map-card';
 export const EDITOR_TYPE = 'airflow-map-card-editor';
 
