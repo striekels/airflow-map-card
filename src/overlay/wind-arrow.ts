@@ -9,8 +9,6 @@ export interface ArrowOptions {
   opacity: number;
   /** [x%, y%] within the map area. */
   anchor: [number, number];
-  gustRotation?: number;
-  gustScale?: number;
   label: string;
   interactive: boolean;
 }
@@ -35,22 +33,12 @@ export function renderArrow(options: ArrowOptions): TemplateResult {
         pointerEvents: interactive ? 'auto' : 'none',
       })}
     >
-      ${
-        options.gustRotation !== undefined
-          ? renderGlyph(options.gustRotation, color, 0.35, options.gustScale ?? 1.25)
-          : ''
-      }
-      ${renderGlyph(rotation, color, 1, 1)}
+      ${renderGlyph(rotation, color)}
     </div>
   `;
 }
 
-function renderGlyph(
-  rotation: number,
-  color: string,
-  glyphOpacity: number,
-  scale: number,
-): TemplateResult {
+function renderGlyph(rotation: number, color: string): TemplateResult {
   return html`
     <svg
       class="glyph"
@@ -58,8 +46,7 @@ function renderGlyph(
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
       style=${styleMap({
-        transform: `rotate(${rotation}deg) scale(${scale})`,
-        opacity: String(glyphOpacity),
+        transform: `rotate(${rotation}deg)`,
       })}
     >
       ${svg`

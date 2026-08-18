@@ -11,6 +11,7 @@ import { MapController } from './map/leaflet-map';
 import { resolveTiles } from './map/tiles';
 import { aspectRatioPadding } from './map/aspect';
 import { renderArrow } from './overlay/wind-arrow';
+import { WindFlow } from './overlay/wind-flow';
 import {
   BUCKET_COLORS,
   BUCKET_OPACITY,
@@ -40,9 +41,11 @@ export class AirflowMapCard extends LitElement {
   @state() private _mapError = '';
 
   @query('.map') private _mapElement?: HTMLElement;
+  @query('.flow') private _flowElement?: HTMLCanvasElement;
 
   private _hass?: HomeAssistant;
   private _map?: MapController;
+  private _flow?: WindFlow;
   private _templates = new TemplateSubscriber(() => this._renderTick++);
   /**
    * Rotation kept as an unbounded running total so a 359° -> 1° change turns
@@ -134,6 +137,10 @@ export class AirflowMapCard extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._templates.disconnect();
+    // Stop the animation with the card. Nothing else would: the observers hold
+    // a reference to a canvas that is no longer on screen.
+    this._flow?.detach();
+    this._flow = undefined;
   }
 
   override render(): TemplateResult | typeof nothing {
@@ -178,6 +185,7 @@ export class AirflowMapCard extends LitElement {
                before the computed style, so this stops it pinning its own
                position: relative when the card renders while detached. -->
           <div class="map" style=${styleMap({ position: 'absolute', filter: tiles.filter })}></div>
+          ${this._config.flow ? html`<canvas class="flow" aria-hidden="true"></canvas>` : nothing}
           ${
             arrow.hide
               ? nothing
@@ -187,10 +195,6 @@ export class AirflowMapCard extends LitElement {
                   color: this._arrowColor(airflow),
                   opacity: BUCKET_OPACITY[airflow.bucket],
                   anchor: arrow.anchor ?? [50, 50],
-                  gustRotation:
-                    arrow.show_gust && wind.gust !== null && wind.bearing !== null
-                      ? this._continuousRotation
-                      : undefined,
                   label: this._ariaLabel(wind, airflowLabel, t),
                   interactive: true,
                 })
@@ -235,6 +239,8 @@ export class AirflowMapCard extends LitElement {
       if (this._mapError !== message) this._mapError = message;
       return;
     }
+
+    this._syncFlow();
 
     // Belt and braces for layouts that give the card its height a frame late:
     // Leaflet caches the container size at init and draws nothing if it was
@@ -320,6 +326,35 @@ export class AirflowMapCard extends LitElement {
     const arrow = this._config.arrow ?? {};
     if (arrow.color_mode === 'fixed') return arrow.color ?? BUCKET_COLORS.front_to_back;
     return arrow.color ?? BUCKET_COLORS[airflow.bucket];
+  }
+
+  /**
+   * Keep the flow overlay in step with the wind and the configuration.
+   *
+   * The colour and opacity are the arrow's, so the airflow classification reads
+   * the same whichever you look at, and turning `flow` off tears the animation
+   * down rather than leaving it running under a hidden canvas.
+   */
+  private _syncFlow(): void {
+    const canvas = this._flowElement;
+    if (!this._config.flow || !canvas) {
+      this._flow?.detach();
+      this._flow = undefined;
+      return;
+    }
+
+    const wind = resolveWind(this._hass!, this._config.wind);
+    const airflow = this._airflow(wind);
+
+    if (!this._flow) this._flow = new WindFlow();
+    this._flow.attach(canvas);
+    this._flow.update({
+      bearing: wind.bearing === null ? null : windTravelBearing(wind.bearing),
+      speed: wind.speed,
+      unit: wind.speedUnit,
+      color: this._arrowColor(airflow),
+      opacity: BUCKET_OPACITY[airflow.bucket],
+    });
   }
 
   private _arrowRotation(bearing: number | null): number {
@@ -434,6 +469,16 @@ export class AirflowMapCard extends LitElement {
      * sections grid it collapsed to zero height, Leaflet measured a 448x0
      * viewport, and the map rendered nothing at all.
      */
+    /* Over the tiles, under the arrow, and never in the way of a pan. */
+    .flow {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
     .map-wrapper::before {
       content: '';
       display: block;

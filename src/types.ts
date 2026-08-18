@@ -68,7 +68,6 @@ export interface ArrowConfig {
   color?: string;
   /** [x%, y%] within the map area. Defaults to the centre. */
   anchor?: [number, number];
-  show_gust?: boolean;
   hide?: boolean;
 }
 
@@ -101,6 +100,11 @@ export interface AirflowMapCardConfig {
   airflow?: AirflowConfig;
   arrow?: ArrowConfig;
   map?: MapConfig;
+  /**
+   * Animated wind flow over the map. Off by default: it animates
+   * continuously, and a dashboard card often runs all day on a wall tablet.
+   */
+  flow?: boolean;
   rows?: RowConfig[];
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;

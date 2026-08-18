@@ -122,6 +122,7 @@ export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[
       icon: 'mdi:palette-outline',
       schema: [
         { name: 'title', selector: { text: {} } },
+        { name: 'flow', selector: { boolean: {} } },
         {
           name: 'arrow',
           type: 'expandable',
@@ -145,7 +146,6 @@ export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[
                   },
                 },
                 ...(arrowColorMode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
-                { name: 'show_gust', selector: { boolean: {} } },
                 { name: 'hide', selector: { boolean: {} } },
               ],
             },

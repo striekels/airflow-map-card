@@ -276,6 +276,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     const unit = this._windUnit;
     const labels: Record<string, string> = {
       title: 'Title',
+      flow: 'Animated wind flow',
       latitude: 'Latitude',
       longitude: 'Longitude',
       zoom: 'Zoom',
@@ -291,7 +292,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       size: 'Size (px)',
       color_mode: 'Colour mode',
       color: 'Colour (CSS)',
-      show_gust: 'Show gust arrow',
       hide: 'Hide arrow',
       tiles: 'Basemap',
       interactive: 'Allow pan and zoom',

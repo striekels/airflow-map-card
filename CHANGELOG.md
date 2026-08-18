@@ -9,6 +9,35 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Added
+
+- **An optional animated wind flow over the map**, off by default, enabled with `flow: true`
+  or the Animated wind flow toggle in the editor.
+
+  It is a uniform flow, not a wind field. Windy and its imitators advect particles through a
+  grid of vectors from a weather model, which is where the swirls come from; a Home Assistant
+  weather entity reports one vector at one point, so every particle here moves the same
+  direction at the same speed. That is the point rather than a compromise: the arrow already
+  states direction precisely, and what it could not show was speed, which existed only as a
+  number in a row. A 4 km/h breeze and a 40 km/h gale drew an identical arrow. Particle
+  velocity and density now carry that difference, roughly 19 particles at 2 km/h against 71
+  at 80 on a typical card.
+
+  It animates, so it pauses when scrolled out of view, when the browser tab is hidden and
+  when the card disconnects, and draws a single still frame under `prefers-reduced-motion`.
+  Colour follows the airflow classification, so it agrees with the arrow. Costs about 1.2 kB
+  gzipped.
+
+  Deliberately not done: bending the flow around the building outline. It would look
+  wonderful and it would be fiction.
+
+### Removed
+
+- **The gust arrow, and `arrow.show_gust` with it.** A second, fainter arrow at a slightly
+  different angle read as a rendering artefact rather than as information. Gust is better as
+  a number: `wind.gust_entity` and the `gust` info row are unchanged, so add a row with
+  **Value: Wind gust** to show it.
+
 ### Fixed
 
 - **The distributed bundle carried no copyright notices.** The build passed

@@ -57,7 +57,6 @@ describe('cardSchema', () => {
 
   it('writes arrow and map settings under their own config keys', () => {
     expect(paths.size).toEqual([['arrow', 'size']]);
-    expect(paths.show_gust).toEqual([['arrow', 'show_gust']]);
     expect(paths.tiles).toEqual([['map', 'tiles']]);
     expect(paths.tile_url).toEqual([['map', 'tile_url']]);
   });
