@@ -9,6 +9,22 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **In a light wind the flow bunched against one edge and left the middle of the card
+  empty.** Particles were recycled after a fixed number of frames, so a particle's reach
+  depended on the wind: at 3 km/h it could cross seven per cent of the card before its life
+  ran out and it was sent back to the upwind edge, which it could never get far from.
+
+  They are now recycled by distance travelled rather than by time, and the two reasons for
+  recycling are separated. A particle that has blown off the map re-enters from upwind,
+  because that is where the air comes from; one that has simply been alive a long time is
+  reshuffled anywhere, because that is only mixing. Sending both to the edge is what emptied
+  the card.
+
+  Measured as the spread of particles across the map, from the upwind edge, at the 10th, 50th
+  and 90th percentile. At 3 km/h: 98, 98, 99 per cent before, against 13, 38, 75 after.
+
 ## [0.5.0] — 2026-08-18
 
 ### Added

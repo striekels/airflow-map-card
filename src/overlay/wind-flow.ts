@@ -31,14 +31,25 @@ export interface FlowState {
 interface Particle {
   x: number;
   y: number;
-  /** Frames left before this one is recycled, so the field keeps mixing. */
-  life: number;
+  /**
+   * Pixels travelled since this particle entered, so it is recycled by distance
+   * rather than by time. Counting frames instead tied a particle's reach to the
+   * wind speed: at 3 km/h it could cross 7 per cent of the card before its life
+   * ran out, so the whole field sat pinned against the upwind edge and the
+   * middle of the map stayed empty.
+   */
+  travelled: number;
 }
 
 /** Trail length, as a fraction of one second of travel. */
 const TRAIL = 0.2;
-/** Frames a particle lives before being respawned somewhere new. */
-const MAX_LIFE = 260;
+/**
+ * How far a particle travels before it is reshuffled, in card spans.
+ *
+ * A little over one span, so a particle normally crosses the map and leaves
+ * rather than being recycled mid-flight.
+ */
+const TRAVEL_SPANS = 1.4;
 /** How much of the previous frame survives. Lower fades trails faster. */
 const FADE = 0.9;
 
@@ -225,11 +236,17 @@ export class WindFlow {
     while (this.particles.length < want) this.particles.push(this.spawn());
   }
 
+  /** Distance a particle covers before being reshuffled. */
+  private get maxTravel(): number {
+    return Math.max(this.width, this.height) * TRAVEL_SPANS;
+  }
+
   private spawn(): Particle {
     return {
       x: Math.random() * this.width,
       y: Math.random() * this.height,
-      life: Math.random() * MAX_LIFE,
+      // Staggered, so the field does not reshuffle in one visible wave.
+      travelled: Math.random() * this.maxTravel,
     };
   }
 
@@ -277,10 +294,19 @@ export class WindFlow {
 
       p.x += vx * dt;
       p.y += vy * dt;
-      p.life -= 1;
+      p.travelled += Math.hypot(vx, vy) * dt;
 
+      // Two different events, which used to share one outcome. A particle that
+      // has blown off the map should re-enter from upwind, because that is
+      // where the air is coming from. One that has merely been alive a long
+      // while is just being reshuffled, and sending it to the edge as well is
+      // what emptied the middle of the card in a light wind.
       const out = p.x < -40 || p.x > this.width + 40 || p.y < -40 || p.y > this.height + 40;
-      if (out || p.life <= 0) Object.assign(p, this.respawn(vx, vy));
+      if (out) {
+        Object.assign(p, this.enterUpwind(vx, vy));
+      } else if (p.travelled > this.maxTravel) {
+        Object.assign(p, this.spawn(), { travelled: 0 });
+      }
     }
 
     ctx.stroke();
@@ -297,9 +323,9 @@ export class WindFlow {
    * region downwind of it emptied out as particles recycled. Weighting the
    * choice keeps both edges supplied, which is what a corner wind needs.
    */
-  private respawn(vx: number, vy: number): Particle {
+  private enterUpwind(vx: number, vy: number): Particle {
     const p = this.spawn();
-    p.life = MAX_LIFE;
+    p.travelled = 0;
 
     const total = Math.abs(vx) + Math.abs(vy);
     if (total === 0) return p;
