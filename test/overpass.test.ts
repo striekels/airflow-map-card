@@ -28,7 +28,7 @@ describe('parseFootprints', () => {
     ]);
     expect(result.buildings).toHaveLength(1);
     expect(result.roads).toHaveLength(1);
-    expect(result.roads[0]).toHaveLength(2);
+    expect(result.roads[0].points).toHaveLength(2);
   });
 
   it('keeps address tags when present and omits the key when not', () => {
@@ -53,6 +53,115 @@ describe('parseFootprints', () => {
   it('ignores ways that are neither buildings nor roads', () => {
     const result = parseFootprints([way({ landuse: 'grass' }, SQUARE)]);
     expect(result).toEqual({ buildings: [], roads: [] });
+  });
+});
+
+describe('parseFootprints on relations', () => {
+  /*
+   * A house with a courtyard, a shared wall, or any outline OpenStreetMap could
+   * not express as one closed way is a multipolygon relation. Asking only for
+   * ways returned nothing for those addresses and the user was told no building
+   * was mapped here, which is wrong and impossible to act on.
+   */
+  const member = (role: string, points: Array<[number, number]>) => ({
+    type: 'way',
+    role,
+    geometry: points.map(([lat, lon]) => ({ lat, lon })),
+  });
+
+  const OUTER_A = member('outer', [
+    [51.0, 5.0],
+    [51.0, 5.001],
+  ]);
+  const OUTER_B = member('outer', [
+    [51.0, 5.001],
+    [51.001, 5.001],
+  ]);
+  const OUTER_C = member('outer', [
+    [51.001, 5.001],
+    [51.0, 5.0],
+  ]);
+
+  it('assembles a building from its outer members', () => {
+    const result = parseFootprints([
+      { id: 1, tags: { building: 'house' }, members: [OUTER_A, OUTER_B, OUTER_C] },
+    ]);
+    expect(result.buildings).toHaveLength(1);
+    expect(result.buildings[0].ring).toHaveLength(4);
+  });
+
+  it('keeps the address tags', () => {
+    const result = parseFootprints([
+      {
+        id: 1,
+        tags: { building: 'yes', 'addr:street': 'Mill Lane', 'addr:housenumber': '55' },
+        members: [OUTER_A, OUTER_B, OUTER_C],
+      },
+    ]);
+    expect(result.buildings[0].address).toEqual({ street: 'Mill Lane', housenumber: '55' });
+  });
+
+  it('ignores inner members, which are courtyards rather than the outline', () => {
+    const inner = member('inner', [
+      [51.0004, 5.0004],
+      [51.0006, 5.0006],
+    ]);
+    const result = parseFootprints([
+      { id: 1, tags: { building: 'house' }, members: [OUTER_A, OUTER_B, OUTER_C, inner] },
+    ]);
+    // A wall facing into a courtyard is not the front of the house.
+    expect(result.buildings[0].ring).toHaveLength(4);
+    expect(result.buildings[0].ring).not.toContainEqual({ lat: 51.0004, lon: 5.0004 });
+  });
+
+  it('treats a member with no role as outer', () => {
+    const result = parseFootprints([
+      {
+        id: 1,
+        tags: { building: 'house' },
+        members: [
+          { type: 'way', geometry: OUTER_A.geometry },
+          { type: 'way', geometry: OUTER_B.geometry },
+          { type: 'way', geometry: OUTER_C.geometry },
+        ],
+      },
+    ]);
+    expect(result.buildings).toHaveLength(1);
+  });
+
+  it('skips a relation whose members cannot form a ring', () => {
+    const result = parseFootprints([{ id: 1, tags: { building: 'house' }, members: [OUTER_A] }]);
+    expect(result.buildings).toEqual([]);
+  });
+
+  it('still parses ways alongside relations', () => {
+    const result = parseFootprints([
+      way({ building: 'house' }, SQUARE),
+      { id: 2, tags: { building: 'house' }, members: [OUTER_A, OUTER_B, OUTER_C] },
+    ]);
+    expect(result.buildings).toHaveLength(2);
+  });
+});
+
+describe('parseFootprints road names', () => {
+  it('keeps a road name, which is what a corner plot needs', () => {
+    const result = parseFootprints([
+      way({ highway: 'residential', name: 'Panisdries' }, [
+        [51.0, 5.0],
+        [51.0, 5.002],
+      ]),
+    ]);
+    expect(result.roads[0].name).toBe('Panisdries');
+  });
+
+  it('omits the name when the road has none', () => {
+    const result = parseFootprints([
+      way({ highway: 'service' }, [
+        [51.0, 5.0],
+        [51.0, 5.002],
+      ]),
+    ]);
+    expect(result.roads[0].name).toBeUndefined();
   });
 });
 
@@ -113,6 +222,20 @@ describe('fetchFootprints', () => {
     expect(init?.body).toBeUndefined();
     expect(String(url)).toContain('overpass-api.de/api/interpreter?data=');
     expect(decodeURIComponent(String(url))).toContain('["building"]');
+  });
+
+  it('asks for relations as well as ways', async () => {
+    // A house mapped as a multipolygon is a relation, and asking only for ways
+    // returned nothing for those addresses while telling the user no building
+    // was mapped here. The parsed result cannot show this, so the query is
+    // pinned directly.
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    await fetchFootprints(11.3, 21.3);
+
+    const query = decodeURIComponent(String(fetchMock.mock.calls[0][0]));
+    expect(query).toContain('way(around:30,11.3,21.3)["building"]');
+    expect(query).toContain('relation(around:30,11.3,21.3)["building"]');
+    expect(query).toContain('["highway"]');
   });
 
   it('sends a referrer, without which the service rejects the request', async () => {

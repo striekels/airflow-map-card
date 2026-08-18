@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bearingBetween,
   detectFacadeBearing,
+  stitchRing,
   distanceToPolyline,
   outwardNormals,
   pointInPolygon,
@@ -229,9 +230,12 @@ describe('ringCentre', () => {
   });
 });
 
+/** Roads are named segments now; most tests do not care about the name. */
+const road = (points: LatLon[], name?: string) => (name ? { points, name } : { points });
+
 describe('detectFacadeBearing', () => {
   it('reproduces a hand-tuned facade bearing from OSM geometry alone', () => {
-    const detection = detectFacadeBearing(HOUSE, [STREET], HOME);
+    const detection = detectFacadeBearing(HOUSE, [road(STREET)], HOME);
     expect(detection).not.toBeNull();
 
     // The owner of this house had independently arrived at 166.52 degrees by
@@ -241,7 +245,7 @@ describe('detectFacadeBearing', () => {
   });
 
   it('reports the street it reasoned from', () => {
-    const detection = detectFacadeBearing(HOUSE, [STREET], HOME)!;
+    const detection = detectFacadeBearing(HOUSE, [road(STREET)], HOME)!;
     expect(detection.streetDistance).toBeGreaterThan(10);
     expect(detection.streetDistance).toBeLessThan(25);
     expect(detection.offStreet).toBeLessThan(5);
@@ -251,7 +255,7 @@ describe('detectFacadeBearing', () => {
     // The side walls are 10.3 m and 11.7 m; the front is 4.4 m. Sorting by
     // length alone would get this wrong, which is exactly the mistake a human
     // makes when dragging by eye.
-    const detection = detectFacadeBearing(HOUSE, [STREET], HOME)!;
+    const detection = detectFacadeBearing(HOUSE, [road(STREET)], HOME)!;
     const longest = detection.walls[0];
     expect(longest.length).toBeGreaterThan(10);
     expect(Math.round(detection.bearing)).not.toBe(Math.round(longest.normal));
@@ -259,7 +263,7 @@ describe('detectFacadeBearing', () => {
 
   it('returns null when there is nothing to reason from', () => {
     expect(detectFacadeBearing(HOUSE, [], HOME)).toBeNull();
-    expect(detectFacadeBearing([], [STREET], HOME)).toBeNull();
+    expect(detectFacadeBearing([], [road(STREET)], HOME)).toBeNull();
   });
 
   it('follows the street when the street moves to the other side', () => {
@@ -267,7 +271,7 @@ describe('detectFacadeBearing', () => {
       { lat: 51.0597, lon: 8.2782 },
       { lat: 51.0597, lon: 8.2788 },
     ];
-    const detection = detectFacadeBearing(HOUSE, [behind], HOME)!;
+    const detection = detectFacadeBearing(HOUSE, [road(behind)], HOME)!;
     // Now the nearest road is north of the house, so the front flips.
     expect(detection.bearing).toBeGreaterThan(300);
   });
@@ -307,5 +311,123 @@ describe('snapToWalls', () => {
   it('respects the tolerance and the wrap point', () => {
     expect(snapToWalls(170, walls, 1)).toBe(170);
     expect(snapToWalls(2, [{ normal: 358, length: 1 }])).toBe(358);
+  });
+});
+
+describe('detectFacadeBearing on a corner plot', () => {
+  /*
+   * The house sits on a corner. Its address is on the road to the south, but a
+   * side street runs closer, to the west. Facing the nearest road puts the
+   * front on the side of the house, which is the whole bug: it looks entirely
+   * plausible and is wrong, and a straight terrace like the fixture above can
+   * never show it.
+   */
+  const addressStreet = road(
+    [
+      { lat: 51.0593, lon: 8.2782 },
+      { lat: 51.0593, lon: 8.2792 },
+    ],
+    'Panisdries',
+  );
+  const sideStreet = road(
+    [
+      { lat: 51.0594, lon: 8.27855 },
+      { lat: 51.0598, lon: 8.27855 },
+    ],
+    'Zijstraat',
+  );
+
+  it('faces the road the house is numbered on, not the closer one', () => {
+    const nearest = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME)!;
+    const matched = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME, {
+      street: 'Panisdries',
+    })!;
+
+    // Without the street name the side street wins on distance.
+    expect(nearest.streetDistance).toBeLessThan(matched.streetDistance);
+    // With it, the front comes back to the south-facing wall.
+    expect(matched.bearing).toBeGreaterThan(150);
+    expect(matched.bearing).toBeLessThan(200);
+    expect(Math.round(matched.bearing)).not.toBe(Math.round(nearest.bearing));
+  });
+
+  it('compares street names the way a person would', () => {
+    const spaced = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME, {
+      street: '  panisdries  ',
+    })!;
+    const exact = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME, {
+      street: 'Panisdries',
+    })!;
+    expect(spaced.bearing).toBe(exact.bearing);
+  });
+
+  it('falls back to the nearest road when no name matches', () => {
+    const unmatched = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME, {
+      street: 'Somewhere Else',
+    })!;
+    const nearest = detectFacadeBearing(HOUSE, [sideStreet, addressStreet], HOME)!;
+    expect(unmatched.bearing).toBe(nearest.bearing);
+  });
+
+  it('ignores the street name when the roads are unnamed', () => {
+    const unnamed = [road(sideStreet.points), road(addressStreet.points)];
+    const detection = detectFacadeBearing(HOUSE, unnamed, HOME, { street: 'Panisdries' })!;
+    expect(detection.bearing).toBe(detectFacadeBearing(HOUSE, unnamed, HOME)!.bearing);
+  });
+});
+
+describe('stitchRing', () => {
+  // A multipolygon stores its outline as several ways, in arbitrary order and
+  // direction. Concatenating them as they arrive gives a self-crossing shape
+  // whose outward normals are nonsense.
+  const a: LatLon[] = [
+    { lat: 0, lon: 0 },
+    { lat: 0, lon: 1 },
+  ];
+  const b: LatLon[] = [
+    { lat: 0, lon: 1 },
+    { lat: 1, lon: 1 },
+  ];
+  const c: LatLon[] = [
+    { lat: 1, lon: 1 },
+    { lat: 0, lon: 0 },
+  ];
+
+  it('joins segments given in order', () => {
+    expect(stitchRing([a, b, c])).toEqual([
+      { lat: 0, lon: 0 },
+      { lat: 0, lon: 1 },
+      { lat: 1, lon: 1 },
+      { lat: 0, lon: 0 },
+    ]);
+  });
+
+  it('joins segments given out of order', () => {
+    expect(stitchRing([b, c, a])).toHaveLength(4);
+    expect(stitchRing([c, a, b])).toHaveLength(4);
+  });
+
+  it('reverses a segment that joins end to end', () => {
+    const reversed = [...b].reverse();
+    const ring = stitchRing([a, reversed, c])!;
+    expect(ring).toHaveLength(4);
+    // Still a genuine ring: it comes back to where it started.
+    expect(ring[0]).toEqual(ring[ring.length - 1]);
+  });
+
+  it('keeps what it can join rather than splicing unrelated outlines', () => {
+    const disjoint: LatLon[] = [
+      { lat: 9, lon: 9 },
+      { lat: 9, lon: 8 },
+    ];
+    const ring = stitchRing([a, b, disjoint])!;
+    expect(ring).toHaveLength(3);
+    expect(ring).not.toContainEqual({ lat: 9, lon: 9 });
+  });
+
+  it('returns null when there is not enough to form a ring', () => {
+    expect(stitchRing([])).toBeNull();
+    expect(stitchRing([[{ lat: 0, lon: 0 }]])).toBeNull();
+    expect(stitchRing([a])).toBeNull();
   });
 });

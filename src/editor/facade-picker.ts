@@ -12,6 +12,7 @@ import {
   selectBuilding,
   snapToWalls,
   type LatLon,
+  type RoadSegment,
   type WallEdge,
 } from '../data/footprint';
 import {
@@ -77,7 +78,7 @@ export class FacadePicker extends LitElement {
   @state() private _snapped = false;
   /** Every building the last lookup returned, so any of them can be clicked. */
   @state() private _buildings: BuildingFootprint[] = [];
-  @state() private _roads: LatLon[][] = [];
+  @state() private _roads: RoadSegment[] = [];
   /**
    * The point the last lookup was run at: the map centre, not the configured
    * position. Reused when a different building is clicked so the click and the
@@ -331,7 +332,11 @@ export class FacadePicker extends LitElement {
 
     this._drawFootprints(index);
 
-    const detection = detectFacadeBearing(building.ring, this._roads, this._point);
+    // The building's own street, so a corner plot faces the road it is
+    // numbered on rather than whichever happens to be nearest.
+    const detection = detectFacadeBearing(building.ring, this._roads, this._point, {
+      street: building.address?.street,
+    });
     if (!detection) {
       this._fail('Could not read that building outline. Drag the line instead.');
       return;

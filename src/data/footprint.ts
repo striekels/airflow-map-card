@@ -5,6 +5,17 @@ export interface LatLon {
   lon: number;
 }
 
+/**
+ * A road, with its name when OpenStreetMap has one.
+ *
+ * The name is what lets a corner plot pick the right street: the geometry alone
+ * cannot tell the front of the house from the side.
+ */
+export interface RoadSegment {
+  points: LatLon[];
+  name?: string;
+}
+
 /** Local tangent-plane coordinates in metres: x east, y north. */
 export interface Point {
   x: number;
@@ -233,23 +244,50 @@ export function selectBuilding(buildings: LatLon[][], point: LatLon): BuildingCh
  * against a real semi-detached house whose owner had hand-tuned the value to
  * 166.52 degrees; this returns 167.0.
  */
+export interface FacadeOptions {
+  /** The building's `addr:street`, when it has one. */
+  street?: string;
+  /** Wall normals within this many degrees of the best are treated as one face. */
+  tolerance?: number;
+}
+
+/** Street names compared the way a person would: case and spacing ignored. */
+function sameStreet(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return false;
+  const tidy = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
+  return tidy(a) === tidy(b);
+}
+
 export function detectFacadeBearing(
   building: LatLon[],
-  roads: LatLon[][],
+  roads: RoadSegment[],
   origin: LatLon,
-  tolerance = 10,
+  options: FacadeOptions = {},
 ): FacadeDetection | null {
+  const { street, tolerance = 10 } = options;
   const ring = building.map((p) => toLocalMetres(origin, p));
   const walls = outwardNormals(ring);
   if (walls.length === 0) return null;
 
   const centre = polygonCentroid(ring);
 
+  /*
+   * Prefer a road the building actually has an address on.
+   *
+   * Facing the nearest road is right in the middle of a terrace and wrong on a
+   * corner, where the side street is usually closer than the one the house is
+   * numbered on, so the detected facade came out as the side of the house.
+   * OpenStreetMap gives us both halves of the answer in data already being
+   * fetched: buildings carry `addr:street` and roads carry `name`.
+   */
+  const named = street ? roads.filter((road) => sameStreet(road.name, street)) : [];
+  const candidates = named.length > 0 ? named : roads;
+
   let nearestRoad: { distance: number; closest: Point } | null = null;
-  for (const road of roads) {
+  for (const road of candidates) {
     const hit = distanceToPolyline(
       centre,
-      road.map((p) => toLocalMetres(origin, p)),
+      road.points.map((p) => toLocalMetres(origin, p)),
     );
     if (hit && (!nearestRoad || hit.distance < nearestRoad.distance)) nearestRoad = hit;
   }
@@ -287,4 +325,57 @@ export function snapToWalls(bearing: number, walls: WallEdge[], tolerance = 8): 
     }
   }
   return best ? best.normal : bearing;
+}
+
+/** Two positions the same to within about a centimetre. */
+function samePoint(a: LatLon, b: LatLon): boolean {
+  return Math.abs(a.lat - b.lat) < 1e-7 && Math.abs(a.lon - b.lon) < 1e-7;
+}
+
+/**
+ * Join way segments into one ring.
+ *
+ * A building mapped as an OpenStreetMap multipolygon stores its outline as
+ * several ways, in no particular order and in either direction, so the pieces
+ * have to be walked end to end rather than simply concatenated. Concatenating
+ * them in the order Overpass happens to return produces a self-crossing shape
+ * whose outward normals are nonsense, which would look like a detected building
+ * with a plausible and wrong facade.
+ *
+ * Returns what it managed to join if the pieces do not form a closed loop,
+ * which is better than nothing for finding a front wall, and null if there is
+ * not enough to work with.
+ */
+export function stitchRing(segments: LatLon[][]): LatLon[] | null {
+  const usable = segments.filter((segment) => segment.length >= 2);
+  if (usable.length === 0) return null;
+
+  const remaining = usable.slice(1);
+  const ring = [...usable[0]];
+
+  while (remaining.length > 0) {
+    const tail = ring[ring.length - 1];
+    let joined = -1;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const segment = remaining[i];
+      if (samePoint(segment[0], tail)) {
+        ring.push(...segment.slice(1));
+        joined = i;
+        break;
+      }
+      if (samePoint(segment[segment.length - 1], tail)) {
+        ring.push(...segment.slice(0, -1).reverse());
+        joined = i;
+        break;
+      }
+    }
+
+    // Disjoint pieces: keep what joined rather than splicing unrelated
+    // outlines together.
+    if (joined === -1) break;
+    remaining.splice(joined, 1);
+  }
+
+  return ring.length >= 3 ? ring : null;
 }

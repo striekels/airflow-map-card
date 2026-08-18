@@ -11,6 +11,30 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ### Fixed
 
+- **A house mapped as a relation was invisible to Detect.** The query asked only for
+  `way["building"]`, so any outline OpenStreetMap could not express as a single closed way, a
+  courtyard, a shared wall, a complex footprint, returned nothing at all. The user was then
+  told no building was mapped here, which is both wrong and impossible to act on. Relations
+  are now requested and their outer members assembled into a ring.
+
+  The pieces have to be walked end to end rather than concatenated: a multipolygon stores its
+  outline as several ways in no particular order or direction, and joining them as they
+  arrive produces a self-crossing shape whose outward normals are nonsense. That would have
+  looked like a detected building with a plausible and wrong facade. Inner members are
+  ignored, since a wall facing into a courtyard is not the front of the house.
+
+- **On a corner plot Detect faced the side street.** The front wall was chosen by facing the
+  _nearest_ road, and on a corner the side street is usually closer than the one the house is
+  numbered on, so the detected facade came out as the side of the house. It now prefers a
+  road whose name matches the building's `addr:street`, comparing the way a person would, and
+  falls back to nearest when nothing matches. Both halves came from data the card was already
+  fetching.
+
+  Invisible on a straight terrace, which is why the existing fixture could never have caught
+  it and the new tests use a corner plot.
+
+### Fixed
+
 - **The flow froze as soon as the card was saved, or the dashboard put into edit mode.**
   Home Assistant detaches and reattaches cards routinely, and the flow was torn down on
   disconnect with nothing to rebuild it: Lit does not re-render on reconnect, so the one place

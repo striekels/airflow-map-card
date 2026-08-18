@@ -49,7 +49,7 @@ browser user agent and was discarded as unsound because the service was returnin
 the same batch. The observation was correct and the dismissal cost several rounds. When a
 result is suspected of being noise, re-run it rather than setting it aside.
 
-### 0.2 Match the road by `addr:street`, not just proximity — **bug in waiting**
+### 0.2 Match the road by `addr:street`, not just proximity — **done in 0.5.2**
 
 `detectFacadeBearing` faces the wall towards the _nearest_ road. On a corner plot the
 nearest road is frequently the side street, so the detected facade is the side of the house.
@@ -62,7 +62,7 @@ address, and fall back to nearest only when there is no match. This is a small c
 Not visible on a straight terrace like the test fixture, which is exactly why it needs
 writing down rather than waiting to be noticed.
 
-### 0.3 Buildings mapped as relations are invisible — **bug**
+### 0.3 Buildings mapped as relations are invisible — **done in 0.5.2**
 
 The Overpass query asks for `way(...)["building"]` only. A house mapped as a multipolygon
 relation (courtyards, shared walls, complex outlines) returns nothing, and the user is told
@@ -77,12 +77,14 @@ lookup, so the arrow reads against the actual shape of the house rather than a g
 This is the natural payoff of the detection work and is mostly plumbing —
 `MapController.setFootprints` already exists.
 
-### 0.5 The editor has no tests at all
+### 0.5 The editor has no tests at all — **partly done**
 
-`facade-picker.ts` is now the most intricate component in the project: an async network
-call, an abort path, a three-way `auto` / `fallback` / `clicked` state machine that changes
-what the user is told, snapping, and map interaction. It has zero coverage. `parseFootprints`
-is pure, exported and untested; the picker needs a mocked `fetch` and a DOM environment.
+`parseFootprints` is covered now, and `editor/schema.ts` was extracted specifically so the
+form schemas could be tested; `dev/editor.html` renders the editor outside Home Assistant.
+
+What is still uncovered is `facade-picker.ts` itself: an async network call, an abort path, a
+three-way `auto` / `fallback` / `clicked` state machine that changes what the user is told,
+snapping, and map interaction. It needs a mocked `fetch` and a DOM environment.
 
 This sits alongside 3.1 (layout regression tests), which is still the single most valuable
 testing item and still not done.
@@ -95,7 +97,7 @@ load". The Dutch translation is now silently partial. Either route the new strin
 `strings()` or accept that the module is vestigial and remove it — the current halfway state
 is the worst option.
 
-### 0.7 Cool down the Detect button
+### 0.7 Cool down the Detect button — **done in 0.4.2**
 
 Overpass rate-limits hard: two presses in quick succession return 429 and the friendly
 "busy" message. Observed repeatedly during development. Disable the button for a few seconds
@@ -211,7 +213,7 @@ stash it.
 It is idempotent, so it works, but render should not be where the continuous-rotation
 accumulator advances. Move to `willUpdate`.
 
-### 2.5 Editor cannot pick a location on the map — now the weakest link
+### 2.5 Editor cannot pick a location on the map — **done in 0.3.0**
 
 Address search plus lat/lon boxes work, but there is still no draggable pin. This matters
 more since 0.2.0: facade detection depends on the configured point falling _inside_ your

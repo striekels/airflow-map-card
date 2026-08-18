@@ -1,4 +1,4 @@
-import type { LatLon } from './footprint';
+import { stitchRing, type LatLon, type RoadSegment } from './footprint';
 
 export interface BuildingFootprint {
   ring: LatLon[];
@@ -8,7 +8,7 @@ export interface BuildingFootprint {
 
 export interface FootprintQueryResult {
   buildings: BuildingFootprint[];
-  roads: LatLon[][];
+  roads: RoadSegment[];
 }
 
 export class OverpassError extends Error {}
@@ -57,10 +57,23 @@ function isTransient(status: number): boolean {
   return status === 429 || status === 502 || status === 503 || status === 504;
 }
 
+interface OverpassGeometry {
+  lat: number;
+  lon: number;
+}
+
+interface OverpassMember {
+  type?: string;
+  role?: string;
+  geometry?: OverpassGeometry[];
+}
+
 interface OverpassWay {
   id: number;
   tags?: Record<string, string>;
-  geometry?: Array<{ lat: number; lon: number }>;
+  geometry?: OverpassGeometry[];
+  /** Present on relations rather than ways. */
+  members?: OverpassMember[];
 }
 
 /**
@@ -81,7 +94,17 @@ export async function fetchFootprints(
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const query = `[out:json][timeout:25];(way(around:30,${lat},${lon})["building"];way(around:80,${lat},${lon})["highway"];);out geom;`;
+  // Relations as well as ways. A house with a courtyard, a shared wall or any
+  // outline OpenStreetMap could not express as a single closed way is mapped as
+  // a multipolygon relation, and asking only for ways returned nothing at all
+  // for those addresses. The user was then told no building was mapped here,
+  // which is both wrong and impossible to act on.
+  const query =
+    `[out:json][timeout:25];(` +
+    `way(around:30,${lat},${lon})["building"];` +
+    `relation(around:30,${lat},${lon})["building"];` +
+    `way(around:80,${lat},${lon})["highway"];` +
+    `);out geom;`;
   let lastError: OverpassError | undefined;
 
   for (let attempt = 0; attempt <= BACKOFF_MS.length; attempt++) {
@@ -157,22 +180,40 @@ export async function fetchFootprints(
 /** Split an Overpass element list into buildings and roads. Exported for testing. */
 export function parseFootprints(elements: OverpassWay[]): FootprintQueryResult {
   const buildings: BuildingFootprint[] = [];
-  const roads: LatLon[][] = [];
+  const roads: RoadSegment[] = [];
+
+  const addressOf = (tags: Record<string, string> | undefined) => {
+    const street = tags?.['addr:street'];
+    const housenumber = tags?.['addr:housenumber'];
+    return street || housenumber ? { address: { street, housenumber } } : {};
+  };
 
   for (const element of elements) {
-    const geometry = element.geometry;
-    if (!geometry || geometry.length < 2) continue;
-    const ring = geometry.map((p) => ({ lat: p.lat, lon: p.lon }));
+    // A way carries its own geometry; a relation carries members that do.
+    // Keying off the shape rather than off `type` keeps this working whatever
+    // Overpass labels the element.
+    if (element.geometry && element.geometry.length >= 2) {
+      const ring = element.geometry.map((p) => ({ lat: p.lat, lon: p.lon }));
 
-    if (element.tags?.building) {
-      const street = element.tags['addr:street'];
-      const housenumber = element.tags['addr:housenumber'];
-      buildings.push({
-        ring,
-        ...(street || housenumber ? { address: { street, housenumber } } : {}),
-      });
-    } else if (element.tags?.highway) {
-      roads.push(ring);
+      if (element.tags?.building) {
+        buildings.push({ ring, ...addressOf(element.tags) });
+      } else if (element.tags?.highway) {
+        roads.push({ points: ring, ...(element.tags.name ? { name: element.tags.name } : {}) });
+      }
+      continue;
+    }
+
+    if (element.members && element.tags?.building) {
+      // Only the outer ring. Inner members are courtyards and holes, and a wall
+      // facing into a courtyard is not the front of the house. A member with no
+      // role at all is treated as outer, which is what Overpass returns for a
+      // relation mapped without explicit roles.
+      const outer = element.members
+        .filter((m) => (m.role === 'outer' || !m.role) && m.geometry && m.geometry.length >= 2)
+        .map((m) => m.geometry!.map((p) => ({ lat: p.lat, lon: p.lon })));
+
+      const ring = stitchRing(outer);
+      if (ring) buildings.push({ ring, ...addressOf(element.tags) });
     }
   }
 
