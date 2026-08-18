@@ -9,6 +9,15 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The flow froze as soon as the card was saved, or the dashboard put into edit mode.**
+  Home Assistant detaches and reattaches cards routinely, and the flow was torn down on
+  disconnect with nothing to rebuild it: Lit does not re-render on reconnect, so the one place
+  that started the animation never ran again. The canvas survived the round trip still holding
+  its last painted frame, which is why it looked frozen rather than blank or missing. It is
+  now rebuilt on reconnect, alongside the map, which already had the same treatment.
+
 ## [0.5.1] — 2026-08-18
 
 ### Fixed

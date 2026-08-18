@@ -132,6 +132,15 @@ export class AirflowMapCard extends LitElement {
     // Leaflet measures a zero-sized container as zero; re-measure once the
     // card is actually laid out again.
     this._map?.invalidate();
+
+    // Rebuild the flow, which disconnectedCallback tore down.
+    //
+    // Lit does not re-render on reconnect, so `updated` never runs again and
+    // nothing else would ever restart it. The canvas survives the round trip
+    // holding its last painted frame, so the symptom is not a blank card but an
+    // animation that appears to freeze. Home Assistant detaches and reattaches
+    // cards routinely, which is why this showed up the moment a card was saved.
+    this._syncFlow();
   }
 
   override disconnectedCallback(): void {
@@ -337,13 +346,15 @@ export class AirflowMapCard extends LitElement {
    */
   private _syncFlow(): void {
     const canvas = this._flowElement;
-    if (!this._config.flow || !canvas) {
+    // Also reached from connectedCallback, which runs before the first render
+    // and before `hass` is set, so nothing here may assume either exists.
+    if (!this._config?.flow || !this._hass || !canvas) {
       this._flow?.detach();
       this._flow = undefined;
       return;
     }
 
-    const wind = resolveWind(this._hass!, this._config.wind);
+    const wind = resolveWind(this._hass, this._config.wind);
     const airflow = this._airflow(wind);
 
     if (!this._flow) this._flow = new WindFlow();
