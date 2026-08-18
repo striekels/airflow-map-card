@@ -9,6 +9,21 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Added
+
+- **The card draws your house.** Detection already knew the building's outline and threw it
+  away once the bearing was read; it is now stored in `house.footprint` and drawn faintly
+  under the arrow, so the arrow reads against the actual shape of the house rather than a
+  generic map tile.
+
+  Nothing is looked up while the card runs. The outline is a handful of `[lat, lon]` pairs in
+  the config, which is the whole reason it can be drawn at all.
+
+  It is deliberately faint and inert: no label, no hover, and no pointer events, so it never
+  competes with the arrow or blocks a pan. Anything that moves the card without detecting
+  again, an address search, **Use home**, or typing coordinates, clears it, because an outline
+  drawn over whichever house now happens to be underneath is worse than none.
+
 ### Fixed
 
 - **A house mapped as a relation was invisible to Detect.** The query asked only for

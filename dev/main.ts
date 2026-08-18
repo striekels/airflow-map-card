@@ -18,7 +18,17 @@ function config(): AirflowMapCardConfig {
     type: 'custom:airflow-map-card',
     title: 'Airflow',
     location: { latitude: 51.2194, longitude: 4.4025, zoom: 18 },
-    house: { facade_bearing: Number(input('facade').value) },
+    house: {
+      facade_bearing: Number(input('facade').value),
+      // A rough rectangle around the harness location, so the outline has
+      // something to draw without a live Overpass lookup.
+      footprint: [
+        [51.2192, 4.4022],
+        [51.2192, 4.4028],
+        [51.2196, 4.4028],
+        [51.2196, 4.4022],
+      ] as Array<[number, number]>,
+    },
     wind: { entity: 'weather.home' },
     airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
     arrow: { size: 130 },

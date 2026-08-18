@@ -108,6 +108,19 @@ export class AirflowMapCard extends LitElement {
         throw new Error('each row needs one of: source, entity, template');
       }
     }
+    const footprint = config.house?.footprint;
+    if (footprint !== undefined) {
+      const valid =
+        Array.isArray(footprint) &&
+        footprint.every(
+          (point) =>
+            Array.isArray(point) &&
+            point.length === 2 &&
+            point.every((value) => typeof value === 'number' && Number.isFinite(value)),
+        );
+      if (!valid) throw new Error('house.footprint must be a list of [latitude, longitude] pairs');
+    }
+
     const sideways = config.airflow?.sideways_from;
     if (sideways !== undefined && (sideways < 1 || sideways > 90)) {
       throw new Error('airflow.sideways_from must be between 1 and 90');
@@ -248,6 +261,12 @@ export class AirflowMapCard extends LitElement {
       if (this._mapError !== message) this._mapError = message;
       return;
     }
+
+    // The outline the editor detected, drawn from the config. Nothing is looked
+    // up here: the card never queries OpenStreetMap at runtime, and a handful of
+    // coordinate pairs costs nothing to store.
+    const footprint = this._config.house?.footprint;
+    this._map.setFootprints(footprint && footprint.length >= 3 ? [{ ring: footprint }] : [], -1);
 
     this._syncFlow();
 
@@ -480,6 +499,19 @@ export class AirflowMapCard extends LitElement {
      * sections grid it collapsed to zero height, Leaflet measured a 448x0
      * viewport, and the map rendered nothing at all.
      */
+    /*
+     * The house outline. Faint on purpose: it is there so the arrow reads
+     * against the actual shape of the building rather than a generic map, and
+     * it should never compete with the arrow for attention.
+     */
+    .building-footprint {
+      stroke: var(--primary-text-color, #212121);
+      stroke-opacity: 0.45;
+      fill: var(--primary-text-color, #212121);
+      fill-opacity: 0.06;
+      pointer-events: none;
+    }
+
     /* Over the tiles, under the arrow, and never in the way of a pan. */
     .flow {
       position: absolute;

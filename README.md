@@ -138,10 +138,11 @@ and stores the result as coordinates — nothing is looked up while the card is 
 
 ### `house`
 
-| Option                  | Type   | Default | Description                                                               |
-| ----------------------- | ------ | ------- | ------------------------------------------------------------------------- |
-| `facade_bearing`        | number | `0`     | Compass direction the front of the house faces.                           |
-| `facade_bearing_entity` | entity | —       | Take it from an entity instead, e.g. an `input_number` you can tune live. |
+| Option                  | Type   | Default | Description                                                                   |
+| ----------------------- | ------ | ------- | ----------------------------------------------------------------------------- |
+| `facade_bearing`        | number | `0`     | Compass direction the front of the house faces.                               |
+| `facade_bearing_entity` | entity | —       | Take it from an entity instead, e.g. an `input_number` you can tune live.     |
+| `footprint`             | list   | —       | Building outline as `[lat, lon]` pairs. Written by Detect; drawn on the card. |
 
 #### Aligning the facade
 
@@ -156,6 +157,15 @@ and faces the one pointing at the nearest street.
 **It also moves the card's position onto the building it settled on**, so the map and the
 facade angle always describe the same house. This is the easiest way to set your location:
 pan, detect, done.
+
+Detection also stores the outline in `house.footprint`, and the card draws it faintly under
+the arrow, so the arrow reads against the actual shape of your house rather than a generic
+map tile. Nothing is looked up while the card runs: the outline is a handful of coordinate
+pairs in the config.
+
+The outline belongs to one building, so anything that moves the card without detecting
+again, an address search, **Use home**, or typing new coordinates, clears it. Delete
+`house.footprint` if you would rather the card did not draw it.
 
 **If it picked the wrong building, click yours on the map.** The detection re-runs against
 that outline. This is worth doing whenever the highlighted house is not the right number:

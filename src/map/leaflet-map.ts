@@ -171,7 +171,10 @@ export class MapController {
       const polygon = L.polygon(footprint.ring, {
         className: selected ? 'building-footprint selected' : 'building-footprint',
         weight: selected ? 2 : 1,
-        interactive: true,
+        // Interactive only when a click does something. On the card the outline
+        // is a label, not a control, and a polygon that swallows pointer events
+        // over the house would block panning for no reason.
+        interactive: Boolean(onSelect),
       });
 
       if (footprint.label) {

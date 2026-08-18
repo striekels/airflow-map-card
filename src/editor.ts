@@ -126,6 +126,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
                     @bearing-changed=${this._bearingChanged}
                     @location-changed=${this._locationChanged}
                     @zoom-changed=${this._zoomChanged}
+                    @footprint-changed=${this._footprintChanged}
                   ></airflow-facade-picker>
                 `
           }
@@ -183,9 +184,34 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     this._updateConfig({ location: { ...this._config.location, zoom: event.detail.zoom } });
   }
 
+  /** The detected outline, so the card can draw the building it describes. */
+  private _footprintChanged(event: CustomEvent<{ footprint: Array<[number, number]> }>): void {
+    event.stopPropagation();
+    this._updateConfig({
+      house: { ...this._config.house, footprint: event.detail.footprint },
+    });
+  }
+
+  /**
+   * A stored outline belongs to one building, so it cannot survive the card
+   * being pointed somewhere else. Detection sets both together; every other way
+   * of moving the card has to drop it, or the outline is drawn over whichever
+   * house now happens to be under it.
+   */
+  private _movedWithoutDetecting(location: LocationConfig): void {
+    const house = { ...this._config.house };
+    delete house.footprint;
+    this._updateConfig({ location, house });
+  }
+
   private _exactLocationChanged(event: CustomEvent<{ value: LocationConfig }>): void {
     event.stopPropagation();
-    this._updateConfig({ location: { ...this._config.location, ...event.detail.value } });
+    const next = { ...this._config.location, ...event.detail.value };
+    const moved =
+      next.latitude !== this._config.location?.latitude ||
+      next.longitude !== this._config.location?.longitude;
+    if (moved) this._movedWithoutDetecting(next);
+    else this._updateConfig({ location: next });
   }
 
   private _exactHouseChanged(event: CustomEvent<{ value: HouseConfig }>): void {
@@ -201,13 +227,11 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     this._geocodeError = '';
     try {
       const result = await geocode(query, this.hass?.locale?.language ?? this.hass?.language);
-      this._updateConfig({
-        location: {
-          ...this._config.location,
-          latitude: Number(result.latitude.toFixed(6)),
-          longitude: Number(result.longitude.toFixed(6)),
-          zoom: this._config.location?.zoom ?? DEFAULT_ZOOM,
-        },
+      this._movedWithoutDetecting({
+        ...this._config.location,
+        latitude: Number(result.latitude.toFixed(6)),
+        longitude: Number(result.longitude.toFixed(6)),
+        zoom: this._config.location?.zoom ?? DEFAULT_ZOOM,
       });
       this._addressQuery = result.displayName;
     } catch (error) {
@@ -220,13 +244,11 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
   private _useHomeLocation(): void {
     if (!this.hass) return;
     this._geocodeError = '';
-    this._updateConfig({
-      location: {
-        ...this._config.location,
-        latitude: this.hass.config.latitude,
-        longitude: this.hass.config.longitude,
-        zoom: this._config.location?.zoom ?? DEFAULT_ZOOM,
-      },
+    this._movedWithoutDetecting({
+      ...this._config.location,
+      latitude: this.hass.config.latitude,
+      longitude: this.hass.config.longitude,
+      zoom: this._config.location?.zoom ?? DEFAULT_ZOOM,
     });
   }
 

@@ -356,6 +356,15 @@ export class FacadePicker extends LitElement {
       });
     }
 
+    // Hand the outline to the card so it can draw the actual building. Six
+    // decimals is about a tenth of a metre, far finer than any wall, and keeps
+    // the stored ring short.
+    fireEvent(this, 'footprint-changed', {
+      footprint: building.ring.map(
+        (point) => [Number(point.lat.toFixed(6)), Number(point.lon.toFixed(6))] as [number, number],
+      ),
+    });
+
     const label = describeBuilding(building) ?? 'that building';
     const facing =
       `Front wall of ${label} faces ${detection.bearing.toFixed(1)}°, towards the ` +

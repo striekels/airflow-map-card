@@ -69,7 +69,7 @@ relation (courtyards, shared walls, complex outlines) returns nothing, and the u
 "No building mapped here in OpenStreetMap", which is both wrong and unactionable. Add
 `relation(...)["building"];` and assemble the outer ring.
 
-### 0.4 Draw the house outline on the card itself
+### 0.4 Draw the house outline on the card itself — **done in 0.5.2**
 
 The editor shows the building; the live card does not. Storing the chosen ring in the config
 (seven coordinate pairs, trivially small) would let the card draw it faintly with no runtime

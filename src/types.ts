@@ -35,6 +35,15 @@ export interface LocationConfig {
 export interface HouseConfig {
   facade_bearing?: number;
   facade_bearing_entity?: string;
+  /**
+   * The building outline, as [lat, lon] pairs, written by Detect in the editor.
+   *
+   * Stored rather than looked up: the card never queries OpenStreetMap at
+   * runtime, and a handful of coordinate pairs costs nothing in a config.
+   * Cleared whenever the location moves by any route other than detection,
+   * because an outline drawn over the wrong house is worse than none.
+   */
+  footprint?: Array<[number, number]>;
 }
 
 export interface WindConfig {
