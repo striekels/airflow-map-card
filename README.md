@@ -31,6 +31,7 @@ so it stays sharp at any zoom and needs no regenerating when you move or re-fram
 - **One-click facade alignment**: the editor reads your building's outline from
   OpenStreetMap, works out which wall faces the street, and sets the angle for you. Click a
   neighbouring house if it guessed wrong.
+- **Optional animated wind flow** over the map, so speed is visible and not just a number.
 - **Configurable readouts** underneath: built-in values, any entity or attribute, or Jinja
   templates.
 
@@ -99,12 +100,12 @@ the way the air actually travels, i.e. the reciprocal.
 `house.facade_bearing` is the direction the **front of your house faces**: `0` = north,
 `90` = east. With that, the card classifies the flow:
 
-| Angle between the wind's origin and the facade | Result |
-| --- | --- |
-| less than `sideways_from` (default 45°) | **Front → Back** |
-| more than `180 - sideways_from` | **Back → Front** |
-| anything in between | **Sideways** |
-| speed below `weak_below` | **Weak wind** |
+| Angle between the wind's origin and the facade | Result           |
+| ---------------------------------------------- | ---------------- |
+| less than `sideways_from` (default 45°)        | **Front → Back** |
+| more than `180 - sideways_from`                | **Back → Front** |
+| anything in between                            | **Sideways**     |
+| speed below `weak_below`                       | **Weak wind**    |
 
 If you already have a template sensor doing this, keep it — set `airflow.mode: entity` and
 point `airflow.entity` at it. The card still colours the arrow from its own calculation.
@@ -117,29 +118,30 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 
 ### Top level
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `title` | string | — | Card header. Omit for no header. |
-| `rows` | list | airflow, speed, bearing | Info rows. See [Rows](#rows). |
-| `tap_action` | action | `more-info` | Standard Lovelace action. |
+| Option       | Type    | Default                 | Description                                                   |
+| ------------ | ------- | ----------------------- | ------------------------------------------------------------- |
+| `title`      | string  | —                       | Card header. Omit for no header.                              |
+| `flow`       | boolean | `false`                 | Animated wind flow over the map. See [Wind flow](#wind-flow). |
+| `rows`       | list    | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
+| `tap_action` | action  | `more-info`             | Standard Lovelace action.                                     |
 
 ### `location`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `latitude` | number | HA home latitude | |
-| `longitude` | number | HA home longitude | |
-| `zoom` | number | `18` | 1–19. 18–19 shows individual buildings. |
+| Option      | Type   | Default           | Description                             |
+| ----------- | ------ | ----------------- | --------------------------------------- |
+| `latitude`  | number | HA home latitude  |                                         |
+| `longitude` | number | HA home longitude |                                         |
+| `zoom`      | number | `18`              | 1–19. 18–19 shows individual buildings. |
 
 The editor has an address search box. It resolves the address once, when you press Search,
 and stores the result as coordinates — nothing is looked up while the card is running.
 
 ### `house`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `facade_bearing` | number | `0` | Compass direction the front of the house faces. |
-| `facade_bearing_entity` | entity | — | Take it from an entity instead, e.g. an `input_number` you can tune live. |
+| Option                  | Type   | Default | Description                                                               |
+| ----------------------- | ------ | ------- | ------------------------------------------------------------------------- |
+| `facade_bearing`        | number | `0`     | Compass direction the front of the house faces.                           |
+| `facade_bearing_entity` | entity | —       | Take it from an entity instead, e.g. an `input_number` you can tune live. |
 
 #### Aligning the facade
 
@@ -160,17 +162,17 @@ that outline. This is worth doing whenever the highlighted house is not the righ
 the automatic choice depends on your coordinates landing inside the correct polygon, which
 is the one part of the setup you cannot otherwise check.
 
-If your building is not mapped at all, or detection picks the wrong *wall*, drag the line
+If your building is not mapped at all, or detection picks the wrong _wall_, drag the line
 onto the front of the house instead. It snaps to a wall whenever an outline is loaded, so
 you get the building's real angle rather than an eyeballed one.
 
 Three levels of adjustment, coarse to fine:
 
-| Control | Step |
-| --- | --- |
-| Drag the line | free, snapping to a wall within 8° (hold Shift to drag past it) |
-| Arrow keys, with the line focused | 1°, or 5° with Shift |
-| The rotate buttons | 0.1° |
+| Control                           | Step                                                            |
+| --------------------------------- | --------------------------------------------------------------- |
+| Drag the line                     | free, snapping to a wall within 8° (hold Shift to drag past it) |
+| Arrow keys, with the line focused | 1°, or 5° with Shift                                            |
+| The rotate buttons                | 0.1°                                                            |
 
 The lookup runs once per button press and only in the editor. The result is stored as a
 single number, so nothing is queried while the card is running.
@@ -200,49 +202,71 @@ rows, with no alignment furniture.
 
 ### `wind`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `entity` | `weather.*` | — | Source for speed, bearing and gust. |
-| `speed_entity` | `sensor.*` | — | Override just the speed. |
-| `bearing_entity` | `sensor.*` | — | Override just the bearing. Accepts degrees or compass text (`NNW`). |
-| `gust_entity` | `sensor.*` | — | Override just the gust. |
+| Option           | Type        | Default | Description                                                         |
+| ---------------- | ----------- | ------- | ------------------------------------------------------------------- |
+| `entity`         | `weather.*` | —       | Source for speed, bearing and gust.                                 |
+| `speed_entity`   | `sensor.*`  | —       | Override just the speed.                                            |
+| `bearing_entity` | `sensor.*`  | —       | Override just the bearing. Accepts degrees or compass text (`NNW`). |
+| `gust_entity`    | `sensor.*`  | —       | Override just the gust.                                             |
 
 An override always wins over the weather entity. An override that is `unavailable` reads as
 no data rather than silently falling back.
 
 ### `airflow`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `mode` | `compute` \| `entity` \| `off` | `compute` | |
-| `entity` | entity | — | Label source when `mode: entity`. |
-| `weak_below` | number | `5` | In the wind source's unit. |
-| `sideways_from` | number | `45` | Degrees, 1–90. |
-| `labels` | map | English/Dutch built-ins | Override any of `front_to_back`, `back_to_front`, `sideways`, `weak`, `unknown`. |
+| Option          | Type                           | Default                 | Description                                                                      |
+| --------------- | ------------------------------ | ----------------------- | -------------------------------------------------------------------------------- |
+| `mode`          | `compute` \| `entity` \| `off` | `compute`               |                                                                                  |
+| `entity`        | entity                         | —                       | Label source when `mode: entity`.                                                |
+| `weak_below`    | number                         | `5`                     | In the wind source's unit.                                                       |
+| `sideways_from` | number                         | `45`                    | Degrees, 1–90.                                                                   |
+| `labels`        | map                            | English/Dutch built-ins | Override any of `front_to_back`, `back_to_front`, `sideways`, `weak`, `unknown`. |
 
 ### `arrow`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `size` | number | `130` | Pixels. |
-| `color_mode` | `airflow` \| `fixed` | `airflow` | |
-| `color` | CSS colour | per bucket | |
-| `anchor` | `[x%, y%]` | `[50, 50]` | Position over the map. |
-| `show_gust` | boolean | `false` | Adds a larger translucent arrow behind. |
-| `hide` | boolean | `false` | |
+| Option       | Type                 | Default    | Description            |
+| ------------ | -------------------- | ---------- | ---------------------- |
+| `size`       | number               | `130`      | Pixels.                |
+| `color_mode` | `airflow` \| `fixed` | `airflow`  |                        |
+| `color`      | CSS colour           | per bucket |                        |
+| `anchor`     | `[x%, y%]`           | `[50, 50]` | Position over the map. |
+| `hide`       | boolean              | `false`    |                        |
 
 ### `map`
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `tiles` | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto` | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
-| `theme` | `auto` \| `light` \| `dark` | `auto` | Deprecated, and only consulted while `tiles` is `auto`. Use `tiles` instead. |
-| `tile_url` | string | — | Your own tile server. Overrides `tiles`. |
-| `attribution` | boolean | `true` | |
-| `interactive` | boolean | `false` | Allow pan and zoom. |
-| `filter` | CSS filter | per basemap | e.g. `brightness(0.62) contrast(1.05)`. |
-| `aspect_ratio` | string | `4 / 3` | |
-| `height` | number | — | Fixed pixel height; overrides `aspect_ratio`. |
+| Option         | Type                                             | Default     | Description                                                                                          |
+| -------------- | ------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `tiles`        | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto`      | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
+| `theme`        | `auto` \| `light` \| `dark`                      | `auto`      | Deprecated, and only consulted while `tiles` is `auto`. Use `tiles` instead.                         |
+| `tile_url`     | string                                           | —           | Your own tile server. Overrides `tiles`.                                                             |
+| `attribution`  | boolean                                          | `true`      |                                                                                                      |
+| `interactive`  | boolean                                          | `false`     | Allow pan and zoom.                                                                                  |
+| `filter`       | CSS filter                                       | per basemap | e.g. `brightness(0.62) contrast(1.05)`.                                                              |
+| `aspect_ratio` | string                                           | `4 / 3`     |                                                                                                      |
+| `height`       | number                                           | —           | Fixed pixel height; overrides `aspect_ratio`.                                                        |
+
+### Wind flow
+
+Set `flow: true` for an animated flow of particles carried by the wind, drawn over the map.
+Off by default, because it animates continuously and a dashboard often runs all day on a
+wall tablet.
+
+```yaml
+flow: true
+```
+
+**It is a uniform flow, not a wind field.** Windy and similar maps advect particles through a
+grid of vectors from a weather model, which is where their swirls come from. A Home Assistant
+weather entity reports one vector at one point, so every particle here moves in the same
+direction at the same speed. The flow does not bend around your house, and any resemblance to
+how air actually moves around a building would be invented.
+
+What it adds is speed. The arrow states direction precisely and looks identical at 4 km/h and
+40 km/h; particle velocity and density make that difference visible without reading a number.
+Colour follows the same airflow classification as the arrow.
+
+It pauses when scrolled out of view, when the browser tab is hidden and when the card is
+removed, and draws a single still frame if you have reduced motion enabled.
 
 ### Rows
 
@@ -251,7 +275,7 @@ Each row is one of three kinds.
 **Built-in value** — no entity needed:
 
 ```yaml
-- source: airflow   # airflow | speed | gust | bearing | cardinal
+- source: airflow # airflow | speed | gust | bearing | cardinal
   size: large
 ```
 
@@ -259,7 +283,7 @@ Each row is one of three kinds.
 
 ```yaml
 - entity: sensor.outside_temperature
-  attribute: humidity   # optional: read an attribute instead of the state
+  attribute: humidity # optional: read an attribute instead of the state
   precision: 1
 ```
 
@@ -297,7 +321,7 @@ face, so if it says nothing, open the browser console. Setting `map.height` to a
 value is a quick way to confirm.
 
 **The arrow points the opposite way to what I expect**
-`wind_bearing` in Home Assistant is the direction the wind comes *from*; the arrow points the
+`wind_bearing` in Home Assistant is the direction the wind comes _from_; the arrow points the
 way the air travels, which is the reciprocal. If it is still wrong, your integration may be
 reporting a travel direction instead — override it with `wind.bearing_entity`.
 
