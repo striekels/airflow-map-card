@@ -155,17 +155,27 @@ export class WindFlow {
       this.clear();
       return;
     }
+
+    // Seed on every sync, not only when starting the loop.
+    //
+    // Two bugs came from seeding inside the `!running` branch. `measure` empties
+    // the particle array and then calls this, and a ResizeObserver always fires
+    // once when it starts observing, so re-enabling the flow wiped the particles
+    // immediately after seeding them and nothing refilled: the loop ran forever
+    // over an empty array, drawing nothing on a blank canvas. The same guard
+    // also froze density at whatever the speed was when the loop started, so the
+    // count could never follow the wind it is supposed to be showing.
+    //
+    // `seed` only adds or removes the difference, so calling it often is cheap.
+    this.seed();
+
     if (this.reducedMotion) {
       // One still frame: direction stays readable, nothing moves.
       this.stop();
-      this.seed();
       this.step(0);
       return;
     }
-    if (!this.running) {
-      this.seed();
-      this.frame = requestAnimationFrame(this.tick);
-    }
+    if (!this.running) this.frame = requestAnimationFrame(this.tick);
   }
 
   private stop(): void {
