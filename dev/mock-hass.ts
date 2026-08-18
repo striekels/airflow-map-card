@@ -72,7 +72,10 @@ export function mockHass(options: MockOptions): HomeAssistant {
     connection: {
       // Templates render as a literal echo; the real websocket API is not
       // available outside Home Assistant.
-      subscribeMessage: async (callback: (message: unknown) => void, message: any) => {
+      subscribeMessage: async (
+        callback: (message: unknown) => void,
+        message: { template?: string },
+      ) => {
         setTimeout(() => callback({ result: `«${message.template}»` }), 150);
         return () => undefined;
       },

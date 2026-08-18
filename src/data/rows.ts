@@ -1,3 +1,4 @@
+import { stringAttribute } from '../ha-types';
 import type { HassEntity, HomeAssistant } from '../ha-types';
 import type { ActionConfig, RowConfig, RowSize } from '../types';
 import type { AirflowResult } from './airflow';
@@ -85,7 +86,7 @@ export function resolveRow(ctx: RowContext, row: RowConfig, index: number): Reso
       name:
         row.name === false
           ? undefined
-          : (nameOf(row) ?? stateObj.attributes.friendly_name ?? row.entity),
+          : (nameOf(row) ?? stringAttribute(stateObj, 'friendly_name') ?? row.entity),
       value: decorate(row, entityValue(ctx.hass, stateObj, row)),
       entityId: row.entity,
     };
@@ -186,7 +187,7 @@ function entityValue(hass: HomeAssistant, stateObj: HassEntity, row: RowConfig):
     return formatNumber(
       numeric,
       row.precision,
-      unitFor(row, stateObj.attributes.unit_of_measurement ?? null),
+      unitFor(row, stringAttribute(stateObj, 'unit_of_measurement') ?? null),
     );
   }
 

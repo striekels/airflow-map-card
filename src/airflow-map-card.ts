@@ -601,7 +601,6 @@ window.customCards.push({
   documentationURL: 'https://github.com/striekels/airflow-map-card',
 });
 
-/* eslint-disable no-console */
 console.info(
   `%c AIRFLOW-MAP-CARD %c ${CARD_VERSION} `,
   'color: white; background: #4caf50; font-weight: 700;',

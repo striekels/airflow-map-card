@@ -38,7 +38,7 @@ const result = await esbuild.build({
   format: 'esm',
   target: 'es2021',
   minify: true,
-  legalComments: 'none',
+  legalComments: 'eof',
   sourcemap: false,
   plugins: [cssInlinePlugin],
   metafile: true,

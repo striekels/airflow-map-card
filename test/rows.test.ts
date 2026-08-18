@@ -6,7 +6,7 @@ import type { TemplateSubscriber } from '../src/data/templates';
 function entity(
   entity_id: string,
   state: string,
-  attributes: Record<string, any> = {},
+  attributes: Record<string, unknown> = {},
 ): HassEntity {
   return { entity_id, state, attributes, last_changed: '', last_updated: '' };
 }

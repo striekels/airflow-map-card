@@ -14,7 +14,7 @@ needs comes from entities that already exist in the user's instance.
 npm install
 npm run dev        # Vite dev server: card at /, facade picker at /picker.html,
                    # visual editor at /editor.html
-npm test           # vitest, ~96 tests
+npm test           # vitest, 132 tests
 npm run lint
 npm run build      # tsc --noEmit, then esbuild -> dist/airflow-map-card.js
 ```

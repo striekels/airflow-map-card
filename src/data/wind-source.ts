@@ -1,3 +1,4 @@
+import { stringAttribute } from '../ha-types';
 import type { HassEntity, HomeAssistant } from '../ha-types';
 import type { WindConfig } from '../types';
 import { parseBearing } from './bearing';
@@ -45,8 +46,8 @@ export function resolveWind(hass: HomeAssistant, config: WindConfig = {}): WindR
       : null;
 
   const speedUnit = speedOverride
-    ? (speedOverride.attributes.unit_of_measurement ?? null)
-    : (weather?.attributes.wind_speed_unit ?? null);
+    ? (stringAttribute(speedOverride, 'unit_of_measurement') ?? null)
+    : (stringAttribute(weather, 'wind_speed_unit') ?? null);
 
   const bearing = bearingOverride
     ? isUsable(bearingOverride)

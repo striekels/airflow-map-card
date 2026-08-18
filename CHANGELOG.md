@@ -9,6 +9,25 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The distributed bundle carried no copyright notices.** The build passed
+  `legalComments: 'none'` to esbuild, which strips them, while the bundle redistributes
+  Leaflet (BSD-2-Clause) and Lit (BSD-3-Clause). Both licences require the notice to be
+  retained in redistribution, so every copy HACS delivered was non-compliant. Now built with
+  `legalComments: 'eof'`, which costs 1.4 kB raw and 0.3 kB gzipped.
+
+### Security
+
+- The `hacs/action` step in CI ran from `@main`, so whatever that repository held at the
+  moment the job started would execute. Pinned to a commit. It was already limited to manual
+  dispatch and a read-only token.
+- CI now declares `permissions: contents: read` rather than relying on the repository default
+  happening to be read-only.
+- ESLint 8 is end of life and no longer receives security fixes. Upgraded to 10, which meant
+  moving to flat config, and `@typescript-eslint/no-explicit-any` is enforced now instead of
+  switched off.
+
 ## [0.4.2] — 2026-08-18
 
 ### Added

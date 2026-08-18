@@ -8,7 +8,7 @@
 export interface HassEntity {
   entity_id: string;
   state: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   last_changed: string;
   last_updated: string;
 }
@@ -51,4 +51,18 @@ export interface LovelaceCard extends HTMLElement {
   hass?: HomeAssistant;
   getCardSize(): number | Promise<number>;
   setConfig(config: unknown): void;
+}
+
+/**
+ * Read an entity attribute as a string.
+ *
+ * Home Assistant attribute values are untyped, so `attributes` is
+ * `Record<string, unknown>` and every read has to say what it expects. This is
+ * not only about satisfying the compiler: `friendly_name` and
+ * `unit_of_measurement` are conventions, not guarantees, and a non-string value
+ * previously flowed on as though it were one.
+ */
+export function stringAttribute(stateObj: HassEntity | undefined, key: string): string | undefined {
+  const value = stateObj?.attributes[key];
+  return typeof value === 'string' ? value : undefined;
 }
