@@ -36,11 +36,11 @@ interface Particle {
 }
 
 /** Trail length, as a fraction of one second of travel. */
-const TRAIL = 0.12;
+const TRAIL = 0.2;
 /** Frames a particle lives before being respawned somewhere new. */
 const MAX_LIFE = 260;
 /** How much of the previous frame survives. Lower fades trails faster. */
-const FADE = 0.86;
+const FADE = 0.9;
 
 /**
  * Screen pixels per second, per metre per second of wind.
@@ -49,7 +49,7 @@ const FADE = 0.86;
  * with zoom, so a physically faithful mapping would make the flow crawl at zoom
  * 19 and blur at zoom 12. This is a legibility scale, not a measurement.
  */
-const PX_PER_MS = 14;
+const PX_PER_MS = 8;
 
 /**
  * Rough conversion to metres per second, for the animation only.
@@ -249,7 +249,14 @@ export class WindFlow {
     const vy = Math.sin(radians) * px;
 
     ctx.strokeStyle = this.state.color;
-    ctx.globalAlpha = this.state.opacity * 0.75;
+    // Faint on purpose: this sits on a map the user is trying to read.
+    //
+    // Lower than it looks, because trails compound. Each frame strokes a fresh
+    // segment over the last one before it has finished fading, and the slower
+    // the wind the more those segments overlap, so a nominal 0.45 measured 0.89
+    // at the peak. Measured again after this change: peak around 0.6, mean
+    // around 0.2.
+    ctx.globalAlpha = this.state.opacity * 0.3;
     ctx.lineWidth = 1.4;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -271,16 +278,28 @@ export class WindFlow {
   }
 
   /**
-   * Re-enter from the upwind edge, so the field stays fed instead of thinning
-   * out on the side the wind is coming from.
+   * Re-enter through an upwind edge, chosen in proportion to how much flow
+   * actually crosses each one.
+   *
+   * Picking the dominant axis instead left part of the map empty. A diagonal
+   * wind has |vx| equal to |vy|, so a `>` comparison always chose the same edge
+   * and every particle entered through the top; the side never fed, and the
+   * region downwind of it emptied out as particles recycled. Weighting the
+   * choice keeps both edges supplied, which is what a corner wind needs.
    */
   private respawn(vx: number, vy: number): Particle {
     const p = this.spawn();
     p.life = MAX_LIFE;
-    if (Math.abs(vx) > Math.abs(vy)) {
+
+    const total = Math.abs(vx) + Math.abs(vy);
+    if (total === 0) return p;
+
+    if (Math.random() < Math.abs(vx) / total) {
       p.x = vx > 0 ? -20 : this.width + 20;
+      p.y = Math.random() * this.height;
     } else {
       p.y = vy > 0 ? -20 : this.height + 20;
+      p.x = Math.random() * this.width;
     }
     return p;
   }

@@ -23,6 +23,9 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
   velocity and density now carry that difference, roughly 19 particles at 2 km/h against 71
   at 80 on a typical card.
 
+  Deliberately faint and unhurried: it sits on a map you are trying to read, so the flow is
+  there to be noticed rather than watched.
+
   It animates, so it pauses when scrolled out of view, when the browser tab is hidden and
   when the card disconnects, and draws a single still frame under `prefers-reduced-motion`.
   Colour follows the airflow classification, so it agrees with the arrow. Costs about 1.2 kB
