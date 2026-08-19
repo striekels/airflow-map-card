@@ -13,8 +13,8 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 First stable release. From here the configuration format is a contract: it changes only with
 a major version, and an option that stops working is removed and named here rather than left
-in place doing nothing. That is what this version number claims, and all it claims. The
-backlog is still honest about what is missing.
+in place doing nothing. That is what this version number claims, and all it claims: the card
+is not finished, and known gaps are tracked as issues.
 
 **Upgrading from 0.x:** two options were removed, both of which the editor had already
 stopped offering. If your YAML sets `arrow.anchor`, delete it. If it sets `map.theme`,

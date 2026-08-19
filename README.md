@@ -433,9 +433,9 @@ Before opening one:
 
 ## Status
 
-[CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully, why.
-[BACKLOG.md](BACKLOG.md) records what is known to be missing or wrong, including bugs not yet
-fixed and decisions deliberately deferred. Both are written to be read.
+[CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully, why: the reasoning
+behind a fix is usually worth more than the fix. Known problems and planned work live in
+[issues](https://github.com/striekels/airflow-map-card/issues).
 
 ## Credits
 

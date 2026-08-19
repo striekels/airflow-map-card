@@ -14,7 +14,7 @@ needs comes from entities that already exist in the user's instance.
 npm install
 npm run dev        # Vite dev server: card at /, facade picker at /picker.html,
                    # visual editor at /editor.html
-npm test           # vitest, 132 tests
+npm test           # vitest, 155 tests
 npm run lint
 npm run build      # tsc --noEmit, then esbuild -> dist/airflow-map-card.js
 ```
@@ -161,9 +161,7 @@ The three versions must agree; the release workflow refuses to publish a mismatc
 `v*` tag builds the bundle and attaches it to a GitHub release, which is what HACS
 downloads.
 
-To try unreleased work in Home Assistant without cutting a release, HACS can install a
-repository's default branch: Redownload, then pick `main` from the version list.
-
-## Pending decisions
-
-See [BACKLOG.md](BACKLOG.md). Section 0 is the current priority list.
+Unreleased work cannot be tried through HACS. It lists the default branch only for
+repositories that have no releases, so once tags exist the version list is tags only, and the
+next tag is also the first test on a real instance. Weigh that when choosing a version
+number.
