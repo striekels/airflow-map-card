@@ -24,7 +24,31 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
   again, an address search, **Use home**, or typing coordinates, clears it, because an outline
   drawn over whichever house now happens to be underneath is worse than none.
 
+### Removed
+
+Three pieces of the configuration surface, cleared out before 1.0 freezes it. A format is
+only a contract if the options in it do what they say.
+
+- **`arrow.anchor`.** The map is always centred on `location`, so the default put the arrow
+  over the house and any other value slid it off the building it describes. A setting whose
+  only effect is to make the card wrong is not worth keeping.
+
+- **`map.theme`.** Deprecated since 0.3.3, hidden from the editor, and duplicating what
+  `tiles` already decided, with an explicit `tiles` silently winning. If you had
+  `theme: dark` or `theme: light`, set `tiles` to `carto-dark` or `osm` instead; `tiles: auto`
+  is the default and follows the dashboard.
+
 ### Fixed
+
+- **Card-level `tap_action` and `hold_action` did nothing.** Both were declared in the config
+  type and `tap_action` was documented, the referenced entity was even tracked for state
+  changes, but the handler was only ever called from an info row, so tapping was silently
+  ignored. They now fire from the arrow.
+
+  The arrow rather than the whole card, because the card is mostly a map, and a map you can
+  pan is not a button. With an action configured the arrow becomes a real control: keyboard
+  reachable, `role="button"`, and Enter or Space works. Without one it stays a plain image, so
+  nothing becomes focusable that does not do anything.
 
 - **A house mapped as a relation was invisible to Detect.** The query asked only for
   `way["building"]`, so any outline OpenStreetMap could not express as a single closed way, a
@@ -47,8 +71,6 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
   Invisible on a straight terrace, which is why the existing fixture could never have caught
   it and the new tests use a corner plot.
-
-### Fixed
 
 - **The flow froze as soon as the card was saved, or the dashboard put into edit mode.**
   Home Assistant detaches and reattaches cards routinely, and the flow was torn down on

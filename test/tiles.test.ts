@@ -18,21 +18,22 @@ describe('resolveTiles', () => {
     }
   });
 
-  it('honours an explicit theme while the basemap is automatic', () => {
-    expect(host(resolveTiles({ theme: 'dark' }, false).url)).toBe('{s}.basemaps.cartocdn.com');
-    expect(host(resolveTiles({ theme: 'light' }, true).url)).toBe('tile.openstreetmap.org');
-    expect(host(resolveTiles({ theme: 'dark', tiles: 'auto' }, false).url)).toBe(
+  it('has no theme option, which was a second control over one outcome', () => {
+    // `map.theme` was deprecated in 0.3.3 and removed for 1.0. It duplicated
+    // what `tiles` already decided, and an explicit `tiles` silently won, so the
+    // theme could be set and quietly ignored. Pinning a basemap is now the only
+    // way to override the dashboard, which is the whole point of `auto`.
+    expect(host(resolveTiles({ tiles: 'carto-dark' }, false).url)).toBe(
       '{s}.basemaps.cartocdn.com',
     );
+    expect(host(resolveTiles({ tiles: 'osm' }, true).url)).toBe('tile.openstreetmap.org');
   });
 
   it('lets a pinned basemap win over the theme, which is why auto has to exist', () => {
     // This combination is what made a dark dashboard show a light map: the
     // pinned preset is deliberate and wins, so the escape hatch is choosing
     // auto rather than fighting it with the theme.
-    expect(host(resolveTiles({ tiles: 'osm', theme: 'dark' }, true).url)).toBe(
-      'tile.openstreetmap.org',
-    );
+    expect(host(resolveTiles({ tiles: 'osm' }, true).url)).toBe('tile.openstreetmap.org');
     expect(host(resolveTiles({ tiles: 'carto-dark' }, false).url)).toBe(
       '{s}.basemaps.cartocdn.com',
     );

@@ -22,20 +22,16 @@ It replaces the usual `picture-elements` plus static PNG plus `card_mod` recipe.
 live, so it stays sharp at any zoom and never needs regenerating when you move the view, and
 the facade angle is detected from OpenStreetMap rather than guessed by dragging.
 
-> [!WARNING]
-> **Work in progress.** This is pre-1.0 and under active development. It works, it is tested,
-> and it runs on the author's own dashboard, but:
->
-> - The configuration format may change without a migration path until 1.0.
-> - It has been exercised against exactly one Home Assistant instance and one weather
->   integration. Expect rough edges with other setups.
-> - There is no automated coverage of how the card behaves inside Home Assistant's own
->   layouts, a gap that has already produced two shipped bugs. The editor's form schemas are
->   tested; its rendering is not.
-> - Known issues and planned work are tracked openly in [BACKLOG.md](BACKLOG.md).
->
-> Bug reports are welcome; please include your Home Assistant version, the card version from
-> the browser console, and the card's YAML.
+## Stability
+
+The configuration format is the contract. From 1.0 it changes only with a major version, and
+never silently: an option that stops working is removed and named in
+[CHANGELOG.md](CHANGELOG.md) rather than left in place doing nothing.
+
+The card has been exercised against a small number of Home Assistant instances and weather
+integrations, so bug reports are genuinely useful, particularly if your integration reports
+wind in a unit or a bearing convention that produces a plausible but wrong answer. Include
+your Home Assistant version, the card version from the browser console, and your YAML.
 
 ## Contents
 
@@ -49,6 +45,7 @@ the facade angle is detected from OpenStreetMap rather than guessed by dragging.
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
 - [Contributing](#contributing)
+- [Status](#status)
 
 ## What it does
 
@@ -147,12 +144,13 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 
 ### Top level
 
-| Option       | Type    | Default                 | Description                                                   |
-| ------------ | ------- | ----------------------- | ------------------------------------------------------------- |
-| `title`      | string  | —                       | Card header. Omit for no header.                              |
-| `flow`       | boolean | `false`                 | Animated wind flow over the map. See [Wind flow](#wind-flow). |
-| `rows`       | list    | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
-| `tap_action` | action  | `more-info`             | Standard Lovelace action.                                     |
+| Option        | Type    | Default                 | Description                                                   |
+| ------------- | ------- | ----------------------- | ------------------------------------------------------------- |
+| `title`       | string  | —                       | Card header. Omit for no header.                              |
+| `flow`        | boolean | `false`                 | Animated wind flow over the map. See [Wind flow](#wind-flow). |
+| `rows`        | list    | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
+| `tap_action`  | action  | —                       | Standard Lovelace action, fired by tapping the arrow.         |
+| `hold_action` | action  | —                       | The same, on long press or right click.                       |
 
 ### `location`
 
@@ -268,20 +266,18 @@ no data rather than silently falling back.
 
 ### `arrow`
 
-| Option       | Type                 | Default    | Description            |
-| ------------ | -------------------- | ---------- | ---------------------- |
-| `size`       | number               | `130`      | Pixels.                |
-| `color_mode` | `airflow` \| `fixed` | `airflow`  |                        |
-| `color`      | CSS colour           | per bucket |                        |
-| `anchor`     | `[x%, y%]`           | `[50, 50]` | Position over the map. |
-| `hide`       | boolean              | `false`    |                        |
+| Option       | Type                 | Default    | Description |
+| ------------ | -------------------- | ---------- | ----------- |
+| `size`       | number               | `130`      | Pixels.     |
+| `color_mode` | `airflow` \| `fixed` | `airflow`  |             |
+| `color`      | CSS colour           | per bucket |             |
+| `hide`       | boolean              | `false`    |             |
 
 ### `map`
 
 | Option         | Type                                             | Default     | Description                                                                                          |
 | -------------- | ------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------- |
 | `tiles`        | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto`      | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
-| `theme`        | `auto` \| `light` \| `dark`                      | `auto`      | Deprecated, and only consulted while `tiles` is `auto`. Use `tiles` instead.                         |
 | `tile_url`     | string                                           | —           | Your own tile server. Overrides `tiles`.                                                             |
 | `attribution`  | boolean                                          | `true`      |                                                                                                      |
 | `interactive`  | boolean                                          | `false`     | Allow pan and zoom.                                                                                  |
@@ -438,9 +434,9 @@ Before opening one:
 
 ## Status
 
-Pre-1.0 and moving. [CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully,
-why; [BACKLOG.md](BACKLOG.md) records what is known to be missing or wrong, including the
-bugs not yet fixed. Both are written to be read.
+[CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully, why.
+[BACKLOG.md](BACKLOG.md) records what is known to be missing or wrong, including bugs not yet
+fixed and decisions deliberately deferred. Both are written to be read.
 
 ## Credits
 

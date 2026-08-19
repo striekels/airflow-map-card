@@ -208,7 +208,7 @@ export class FacadePicker extends LitElement {
       // Always light, regardless of the dashboard theme. This map exists to
       // align a line against a roof edge, and the light basemap renders
       // building outlines with far more contrast than the dark one.
-      tiles: resolveTiles({ theme: 'light' }, false),
+      tiles: resolveTiles({ tiles: 'osm' }, false),
     };
 
     if (!this._map) {

@@ -40,9 +40,6 @@ export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom' | 'auto'>, TileSp
  * makes text unreadable.
  */
 export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpec {
-  const theme = config.theme ?? 'auto';
-  const isDark = theme === 'dark' || (theme === 'auto' && darkMode);
-
   let spec: TileSpec;
   // 'auto' and unset both mean "follow the dashboard", which is what makes it
   // possible to undo a basemap choice. Without that value the dropdown was a
@@ -59,7 +56,7 @@ export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpe
   } else if (pinned) {
     spec = TILE_PRESETS[config.tiles as Exclude<TilePreset, 'custom' | 'auto'>];
   } else {
-    spec = isDark ? TILE_PRESETS['carto-dark'] : TILE_PRESETS.osm;
+    spec = darkMode ? TILE_PRESETS['carto-dark'] : TILE_PRESETS.osm;
   }
 
   return config.filter ? { ...spec, filter: config.filter } : spec;

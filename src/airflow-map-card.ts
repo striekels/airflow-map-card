@@ -216,9 +216,12 @@ export class AirflowMapCard extends LitElement {
                   size: arrow.size ?? DEFAULT_ARROW_SIZE,
                   color: this._arrowColor(airflow),
                   opacity: BUCKET_OPACITY[airflow.bucket],
-                  anchor: arrow.anchor ?? [50, 50],
                   label: this._ariaLabel(wind, airflowLabel, t),
                   interactive: true,
+                  onTap: this._config.tap_action ? () => this._handleCardAction('tap') : undefined,
+                  onHold: this._config.hold_action
+                    ? () => this._handleCardAction('hold')
+                    : undefined,
                 })
           }
           ${
@@ -302,6 +305,25 @@ export class AirflowMapCard extends LitElement {
         <span class="value">${row.value}</span>
       </div>
     `;
+  }
+
+  /**
+   * Card-level `tap_action` and `hold_action`, on the arrow.
+   *
+   * The arrow rather than the whole card, because the card is mostly a map, and
+   * a map you can pan is not a button. The arrow is the focal element, already
+   * takes pointer events, and sits over the house the action is about.
+   *
+   * These were declared in the config type and documented in the README while
+   * `handleAction` was only ever called from a row, so tapping did nothing at
+   * all. Silently ignored configuration is worse than absent configuration,
+   * which is why this had to be settled one way or the other before 1.0.
+   */
+  private _handleCardAction(kind: 'tap' | 'hold'): void {
+    if (!this._hass) return;
+    const action = kind === 'tap' ? this._config.tap_action : this._config.hold_action;
+    if (!action) return;
+    handleAction(this, this._hass, action, this._config.wind?.entity);
   }
 
   private _handleRowAction(row: ResolvedRow): void {
@@ -436,6 +458,7 @@ export class AirflowMapCard extends LitElement {
       ids.push(this._config.house.facade_bearing_entity);
     if (this._config.airflow?.entity) ids.push(this._config.airflow.entity);
     if (this._config.tap_action?.entity) ids.push(this._config.tap_action.entity);
+    if (this._config.hold_action?.entity) ids.push(this._config.hold_action.entity);
     return ids;
   }
 

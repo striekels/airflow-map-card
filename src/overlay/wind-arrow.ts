@@ -1,4 +1,4 @@
-import { html, svg, type TemplateResult } from 'lit';
+import { html, nothing, svg, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
 export interface ArrowOptions {
@@ -7,26 +7,45 @@ export interface ArrowOptions {
   size: number;
   color: string;
   opacity: number;
-  /** [x%, y%] within the map area. */
-  anchor: [number, number];
   label: string;
   interactive: boolean;
+  onTap?: (event: Event) => void;
+  onHold?: (event: Event) => void;
 }
 
 // Points north at rotation 0: tip at the top, tail at the bottom.
 const ARROW_PATH = 'M50 5 L78 46 L61 46 L61 95 L39 95 L39 46 L22 46 Z';
 
 export function renderArrow(options: ArrowOptions): TemplateResult {
-  const { rotation, size, color, opacity, anchor, label, interactive } = options;
+  const { rotation, size, color, opacity, label, interactive, onTap, onHold } = options;
 
   return html`
     <div
       class="arrow"
-      role="img"
+      role=${onTap ? 'button' : 'img'}
+      tabindex=${onTap ? '0' : nothing}
       aria-label=${label}
+      @click=${onTap}
+      @keydown=${
+        onTap
+          ? (event: KeyboardEvent) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              onTap(event);
+            }
+          : undefined
+      }
+      @contextmenu=${
+        onHold
+          ? (event: Event) => {
+              event.preventDefault();
+              onHold(event);
+            }
+          : undefined
+      }
       style=${styleMap({
-        left: `${anchor[0]}%`,
-        top: `${anchor[1]}%`,
+        left: '50%',
+        top: '50%',
         width: `${size}px`,
         height: `${size}px`,
         opacity: String(opacity),

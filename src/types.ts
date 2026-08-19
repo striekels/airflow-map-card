@@ -75,20 +75,12 @@ export interface ArrowConfig {
   size?: number;
   color_mode?: 'airflow' | 'fixed';
   color?: string;
-  /** [x%, y%] within the map area. Defaults to the centre. */
-  anchor?: [number, number];
   hide?: boolean;
 }
 
 export type TilePreset = 'auto' | 'osm' | 'carto-light' | 'carto-dark' | 'custom';
 
 export interface MapConfig {
-  /**
-   * Deprecated in favour of `tiles`, and still honoured while `tiles` is
-   * `auto` or unset. Two controls that could disagree about the same thing was
-   * a mistake: an explicit `tiles` silently won and left `theme` inert.
-   */
-  theme?: 'auto' | 'light' | 'dark';
   tiles?: TilePreset;
   tile_url?: string;
   attribution?: boolean;
