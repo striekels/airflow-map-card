@@ -9,6 +9,18 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-08-19
+
+First stable release. From here the configuration format is a contract: it changes only with
+a major version, and an option that stops working is removed and named here rather than left
+in place doing nothing. That is what this version number claims, and all it claims. The
+backlog is still honest about what is missing.
+
+**Upgrading from 0.x:** two options were removed, both of which the editor had already
+stopped offering. If your YAML sets `arrow.anchor`, delete it. If it sets `map.theme`,
+replace `theme: dark` with `tiles: carto-dark` and `theme: light` with `tiles: osm`;
+`tiles: auto` is the default and follows the dashboard.
+
 ### Added
 
 - **The card draws your house.** Detection already knew the building's outline and threw it
@@ -543,7 +555,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v0.5.1...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/striekels/airflow-map-card/compare/v0.5.1...v1.0.0
 [0.5.1]: https://github.com/striekels/airflow-map-card/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/striekels/airflow-map-card/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/striekels/airflow-map-card/compare/v0.4.1...v0.4.2

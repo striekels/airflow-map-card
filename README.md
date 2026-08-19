@@ -84,7 +84,7 @@ Settings → Dashboards → ⋮ → **Resources** as a **JavaScript module**:
 ```
 
 If you are updating a manually installed copy, append a version query so the browser cannot
-serve you a cached build: `/local/airflow-map-card.js?v=0.5.1`.
+serve you a cached build: `/local/airflow-map-card.js?v=1.0.0`.
 
 ## Quick start
 
