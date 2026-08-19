@@ -407,8 +407,27 @@ npm run build     # produces dist/airflow-map-card.js
 The build uses esbuild directly rather than Vite's library mode, which does not minify here;
 see `scripts/build.mjs`. Vite is used only for the dev server.
 
-`CLAUDE.md` describes the architecture and the conventions worth knowing before changing
-anything.
+### Conventions worth knowing
+
+Most of the odd-looking code here is odd because of a specific bug. The comments say which,
+and these are the ones that cost the most time to rediscover:
+
+- **All compass and geometry maths lives in `src/data/bearing.ts` and `src/data/footprint.ts`.**
+  A sign error in this domain produces an answer that looks entirely plausible and is 180
+  degrees wrong, which is why it is isolated and heavily tested. Do not do angle arithmetic
+  anywhere else.
+- **A card cannot write its own configuration.** Anything that persists a value belongs in
+  `src/editor/`, which can fire `config-changed`. This constraint shapes the whole editor.
+- **Never put a backtick inside a `css` tagged template**, including in a comment. It
+  terminates the template literal, and the error points somewhere else entirely.
+- **Style Leaflet through CSS classes, never its `color` option.** Leaflet writes that into
+  the SVG `stroke` attribute, where `var(--primary-color)` is not valid and renders black.
+- **The map's height comes from percentage padding, not `aspect-ratio`.** On a flex item
+  whose height is still resolving, `aspect-ratio` collapses to zero inside Home Assistant's
+  sections grid. That shipped once and rendered a blank card.
+- **The Overpass lookup sets `referrerPolicy: 'origin'` and needs it.** Home Assistant serves
+  `Referrer-Policy: no-referrer`, and Overpass rejects a browser user agent with no referrer.
+  It reproduces only inside Home Assistant, never in the harness, so a test asserts it.
 
 ## Contributing
 

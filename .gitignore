@@ -4,3 +4,7 @@ dist/
 *.log
 .vite/
 coverage/
+
+# Local AI tooling, deliberately not shared.
+CLAUDE.md
+.claude/

@@ -4,8 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Changes land under **Unreleased** as they are made. Versions are cut deliberately, not once
-per change; see the release steps in [CLAUDE.md](CLAUDE.md).
+Changes land under **Unreleased** as they are made. Versions are cut deliberately rather
+than once per change: a version per change makes the numbers meaningless and buries the
+releases that mattered.
 
 ## [Unreleased]
 

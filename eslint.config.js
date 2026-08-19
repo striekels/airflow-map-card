@@ -22,8 +22,8 @@ export default tseslint.config(
       globals: { ...globals.browser, ...globals.node },
     },
     rules: {
-      // CLAUDE.md asks for no `any` without a reason, and the codebase has
-      // none. Enforcing it costs nothing today and keeps it that way.
+      // The codebase has no `any` at all. Enforcing that costs nothing today
+      // and keeps it that way.
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
