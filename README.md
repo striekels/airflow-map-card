@@ -1,11 +1,26 @@
 # Airflow Map Card
 
-A Home Assistant Lovelace card that draws your house on an OpenStreetMap basemap and shows
-which way the wind is blowing across it, then tells you whether that airflow runs front to
-back, back to front, or merely sideways.
+[![Release](https://img.shields.io/github/v/release/striekels/airflow-map-card?style=flat-square)](https://github.com/striekels/airflow-map-card/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/striekels/airflow-map-card/ci.yml?branch=main&style=flat-square)](https://github.com/striekels/airflow-map-card/actions/workflows/ci.yml)
+[![HACS](https://img.shields.io/badge/HACS-custom-41BDF5.svg?style=flat-square)](https://hacs.xyz/)
+[![License](https://img.shields.io/github/license/striekels/airflow-map-card?style=flat-square)](LICENSE)
 
-Replaces the usual `picture-elements` + static PNG + `card_mod` approach: the map is live,
-so it stays sharp at any zoom and needs no regenerating when you move or re-frame it.
+**Should you open the windows?** This Home Assistant card draws your house on a live map,
+points an arrow the way the wind is actually travelling, and tells you whether that airflow
+runs front to back, back to front, or merely across the front of the house.
+
+<!--
+  SCREENSHOTS GO HERE. Drop the PNGs into images/ and uncomment:
+
+  ![The card on a dashboard](images/card.png)
+  ![Detecting the facade in the editor](images/editor.png)
+
+  See images/README.md for what to capture.
+-->
+
+It replaces the usual `picture-elements` plus static PNG plus `card_mod` recipe. The map is
+live, so it stays sharp at any zoom and never needs regenerating when you move the view, and
+the facade angle is detected from OpenStreetMap rather than guessed by dragging.
 
 > [!WARNING]
 > **Work in progress.** This is pre-1.0 and under active development. It works, it is tested,
@@ -14,12 +29,26 @@ so it stays sharp at any zoom and needs no regenerating when you move or re-fram
 > - The configuration format may change without a migration path until 1.0.
 > - It has been exercised against exactly one Home Assistant instance and one weather
 >   integration. Expect rough edges with other setups.
-> - There is no automated coverage of the visual editor, and none of how the card behaves in
->   Home Assistant's own layouts. Both gaps have already produced one shipped bug each.
+> - There is no automated coverage of how the card behaves inside Home Assistant's own
+>   layouts, a gap that has already produced two shipped bugs. The editor's form schemas are
+>   tested; its rendering is not.
 > - Known issues and planned work are tracked openly in [BACKLOG.md](BACKLOG.md).
 >
 > Bug reports are welcome; please include your Home Assistant version, the card version from
 > the browser console, and the card's YAML.
+
+## Contents
+
+- [What it does](#what-it-does)
+- [Requirements](#requirements)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [How the direction works](#how-the-direction-works)
+- [Options](#options)
+- [Attribution and fair use](#attribution-and-fair-use)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Contributing](#contributing)
 
 ## What it does
 
@@ -63,7 +92,7 @@ Settings → Dashboards → ⋮ → **Resources** as a **JavaScript module**:
 ```
 
 If you are updating a manually installed copy, append a version query so the browser cannot
-serve you a cached build: `/local/airflow-map-card.js?v=0.2.1`.
+serve you a cached build: `/local/airflow-map-card.js?v=0.5.1`.
 
 ## Quick start
 
@@ -146,13 +175,18 @@ and stores the result as coordinates — nothing is looked up while the card is 
 
 #### Aligning the facade
 
-Open the card editor and look for **Front of the house**. Pan the map to your house, press
+Open the card editor and look for **Where**. Pan the map to your house, press
 **Detect from OpenStreetMap**, and you are usually done.
 
 Detection runs at whatever the map is centred on, not at the coordinates already in the
 config, so panning is how you tell it where to look. It draws every building it found,
 labelled with its house number, picks the one under the centre, reads that outline's walls,
-and faces the one pointing at the nearest street.
+and faces the one pointing at the street.
+
+Which street matters on a corner. If the building carries an `addr:street` tag, the wall is
+faced towards the road of that name rather than whichever road happens to be closest, since
+on a corner plot the side street is usually nearer than the one the house is numbered on.
+Without a matching name it falls back to nearest.
 
 **It also moves the card's position onto the building it settled on**, so the map and the
 facade angle always describe the same house. This is the easiest way to set your location:
@@ -341,8 +375,10 @@ mistake is aligning to a side wall rather than the front; the editor's Detect bu
 building outline exist to prevent exactly that.
 
 **Detect says "No building mapped here"**
-Your building may not be in OpenStreetMap, or may be mapped as a relation rather than a way,
-which is a [known gap](BACKLOG.md). Drag the guide line instead.
+Your building may simply not be mapped in OpenStreetMap yet. Buildings mapped as relations
+rather than ways are supported, so that is no longer the likely cause. Check
+[openstreetmap.org](https://www.openstreetmap.org/) for your address, and drag the guide
+handle to set the angle by hand in the meantime.
 
 **Detect says OpenStreetMap is busy**
 Overpass rate-limits aggressively. Wait a minute and try again.
@@ -354,15 +390,17 @@ npm install
 npm run dev
 ```
 
-Two harnesses run against a mock `hass` object, with no Home Assistant instance needed:
+Three harnesses run against a mock `hass` object, with no Home Assistant instance needed:
 
 - `http://localhost:5173` — the card, with sliders for wind bearing, speed and facade
-  orientation.
+  orientation, and a toggle for the animated flow.
 - `http://localhost:5173/picker.html` — the editor's facade picker, including live
   OpenStreetMap detection.
+- `http://localhost:5173/editor.html` — the whole visual editor, with the resulting YAML
+  beside it. The Home Assistant frontend elements it needs are stubbed in `dev/ha-stubs.ts`.
 
 ```bash
-npm test          # unit tests: compass maths, airflow, rows, footprint geometry
+npm test          # compass maths, airflow, rows, footprint geometry, editor schemas
 npm run lint
 npm run build     # produces dist/airflow-map-card.js
 ```
@@ -380,6 +418,16 @@ Issues and pull requests are welcome.
 `main` is protected: changes reach it through a pull request that passes CI and is approved
 by the maintainer. Fork the repository, work on a branch, and open a PR against `main`.
 
+Most useful right now:
+
+- **Screenshots.** The card has been seen on exactly one dashboard. See
+  [images/README.md](images/README.md) for what is worth capturing.
+- **Reports from other weather integrations.** The airflow maths has been checked against one
+  setup; wind units and `wind_bearing` conventions differ between integrations, and a
+  mismatch produces a plausible wrong answer rather than an obvious failure.
+- **Buildings the facade detection gets wrong.** An OpenStreetMap link plus what it should
+  have picked is enough to turn into a test.
+
 Before opening one:
 
 - `npm test`, `npm run lint` and `npm run build` should all pass.
@@ -387,6 +435,12 @@ Before opening one:
   add tests there. Sign errors in this domain produce plausible-looking wrong answers rather
   than obvious failures, which is why that code is isolated and heavily tested.
 - Follow Conventional Commits.
+
+## Status
+
+Pre-1.0 and moving. [CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully,
+why; [BACKLOG.md](BACKLOG.md) records what is known to be missing or wrong, including the
+bugs not yet fixed. Both are written to be read.
 
 ## Credits
 
