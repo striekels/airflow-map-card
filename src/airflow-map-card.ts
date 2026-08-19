@@ -354,7 +354,7 @@ export class AirflowMapCard extends LitElement {
     const config = this._config.airflow ?? {};
     if (config.mode === 'off') return { bucket: 'unknown', delta: null };
 
-    // `mode: entity` still computes a bucket — the arrow needs one to pick its
+    // `mode: entity` still computes a bucket: the arrow needs one to pick its
     // colour. Only the displayed label comes from the external entity.
     return computeAirflow({
       windFrom: wind.bearing,

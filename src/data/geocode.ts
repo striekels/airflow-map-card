@@ -11,7 +11,7 @@ const ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 /**
  * Look up an address with OpenStreetMap's Nominatim service.
  *
- * Called only from the editor, and only when the user presses Search — never
+ * Called only from the editor, and only when the user presses Search, never
  * per keystroke and never while the card is running. Nominatim's usage policy
  * caps automated use at one request per second and forbids autocomplete-style
  * querying; a submit-triggered lookup that gets stored as coordinates stays

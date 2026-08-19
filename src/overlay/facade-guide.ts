@@ -6,7 +6,7 @@ export interface FacadeGuideOptions {
   facadeBearing: number;
   /** Half-angle of the front-on sector, degrees. */
   sidewaysFrom: number;
-  /** [x%, y%] within the map area — matches the arrow. */
+  /** [x%, y%] within the map area. Matches the arrow. */
   anchor: [number, number];
   color: string;
   /** When set, the wall line becomes a grab handle for setting the bearing. */
@@ -50,7 +50,7 @@ const HANDLE_HIT_R = 11;
  * Shows three things at once: a wall line to lay along the front of the house,
  * a chevron marking which side is the front, and the two sectors a wind has to
  * come from to blow through the house rather than across it. Getting the
- * sectors on screen is the point — the numeric threshold alone tells you
+ * sectors on screen is the point: the numeric threshold alone tells you
  * nothing about whether your house is oriented well for cross-ventilation.
  *
  * Every stroke here is kept to a hairline on purpose. This is a measuring tool

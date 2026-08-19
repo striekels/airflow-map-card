@@ -49,7 +49,7 @@ export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom' | 'auto'>, TileSp
 
 /**
  * Pick the tile layer. A dark dashboard gets a genuinely dark basemap rather
- * than an inverted light one — inverting OSM turns green space magenta and
+ * than an inverted light one: inverting OSM turns green space magenta and
  * makes text unreadable.
  */
 export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpec {

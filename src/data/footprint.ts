@@ -48,7 +48,7 @@ const METRES_PER_DEGREE_LAT = 111320;
  * Project to a local tangent plane in metres.
  *
  * A building is tens of metres across, so a flat-earth approximation about a
- * nearby origin is exact to well under a centimetre — far below the precision
+ * nearby origin is exact to well under a centimetre, far below the precision
  * of the OSM geometry itself.
  */
 export function toLocalMetres(origin: LatLon, point: LatLon): Point {

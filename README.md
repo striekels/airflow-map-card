@@ -47,7 +47,7 @@ your Home Assistant version, the card version from the browser console, and your
 - **Live map** of your house from OpenStreetMap or CARTO tiles, following your dashboard's
   light or dark theme.
 - **Wind arrow** driven by any `weather` entity, pointing the way the air actually travels.
-- **Airflow verdict** — front to back, back to front, sideways, or too weak to matter —
+- **Airflow verdict** (front to back, back to front, sideways, or too weak to matter),
   computed from the wind bearing and the way your house faces.
 - **One-click facade alignment**: the editor reads your building's outline from
   OpenStreetMap, works out which wall faces the street, and sets the angle for you. Click a
@@ -128,7 +128,7 @@ the way the air actually travels, i.e. the reciprocal.
 | anything in between                            | **Sideways**     |
 | speed below `weak_below`                       | **Weak wind**    |
 
-If you already have a template sensor doing this, keep it — set `airflow.mode: entity` and
+If you already have a template sensor doing this, keep it: set `airflow.mode: entity` and
 point `airflow.entity` at it. The card still colours the arrow from its own calculation.
 
 > **Units:** `airflow.weak_below` is read in whatever unit your wind source reports. No
@@ -141,11 +141,11 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 
 | Option        | Type    | Default                 | Description                                                   |
 | ------------- | ------- | ----------------------- | ------------------------------------------------------------- |
-| `title`       | string  | —                       | Card header. Omit for no header.                              |
+| `title`       | string  | -                       | Card header. Omit for no header.                              |
 | `flow`        | boolean | `false`                 | Animated wind flow over the map. See [Wind flow](#wind-flow). |
 | `rows`        | list    | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
-| `tap_action`  | action  | —                       | Standard Lovelace action, fired by tapping the arrow.         |
-| `hold_action` | action  | —                       | The same, on long press or right click.                       |
+| `tap_action`  | action  | -                       | Standard Lovelace action, fired by tapping the arrow.         |
+| `hold_action` | action  | -                       | The same, on long press or right click.                       |
 
 ### `location`
 
@@ -156,15 +156,15 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 | `zoom`      | number | `18`              | 1–19. 18–19 shows individual buildings. |
 
 The editor has an address search box. It resolves the address once, when you press Search,
-and stores the result as coordinates — nothing is looked up while the card is running.
+and stores the result as coordinates, so nothing is looked up while the card is running.
 
 ### `house`
 
 | Option                  | Type   | Default | Description                                                                   |
 | ----------------------- | ------ | ------- | ----------------------------------------------------------------------------- |
 | `facade_bearing`        | number | `0`     | Compass direction the front of the house faces.                               |
-| `facade_bearing_entity` | entity | —       | Take it from an entity instead, e.g. an `input_number` you can tune live.     |
-| `footprint`             | list   | —       | Building outline as `[lat, lon]` pairs. Written by Detect; drawn on the card. |
+| `facade_bearing_entity` | entity | -       | Take it from an entity instead, e.g. an `input_number` you can tune live.     |
+| `footprint`             | list   | -       | Building outline as `[lat, lon]` pairs. Written by Detect; drawn on the card. |
 
 #### Aligning the facade
 
@@ -226,11 +226,11 @@ single number, so nothing is queried while the card is running.
 
 While you align, the editor draws a guide over the map:
 
-- a **thin dashed line spanning the whole map** — rotate it until it lies along the front
+- a **thin dashed line spanning the whole map**: rotate it until it lies along the front
   wall of your house. It runs edge to edge on purpose, because alignment error shows up at
   the ends of a long line, and it is dashed so the roofline stays visible underneath;
 - a **chevron on the rim** marking which side of that line is the front;
-- **two shaded sectors** — wind arriving from either one blows through the house rather
+- **two shaded sectors**: wind arriving from either one blows through the house rather
   than across it. The solid-edged sector is the front. Their width is `sideways_from`, so
   you can see what that threshold means for your building.
 
@@ -249,10 +249,10 @@ rows, with no alignment furniture.
 
 | Option           | Type        | Default | Description                                                         |
 | ---------------- | ----------- | ------- | ------------------------------------------------------------------- |
-| `entity`         | `weather.*` | —       | Source for speed, bearing and gust.                                 |
-| `speed_entity`   | `sensor.*`  | —       | Override just the speed.                                            |
-| `bearing_entity` | `sensor.*`  | —       | Override just the bearing. Accepts degrees or compass text (`NNW`). |
-| `gust_entity`    | `sensor.*`  | —       | Override just the gust.                                             |
+| `entity`         | `weather.*` | -       | Source for speed, bearing and gust.                                 |
+| `speed_entity`   | `sensor.*`  | -       | Override just the speed.                                            |
+| `bearing_entity` | `sensor.*`  | -       | Override just the bearing. Accepts degrees or compass text (`NNW`). |
+| `gust_entity`    | `sensor.*`  | -       | Override just the gust.                                             |
 
 An override always wins over the weather entity. An override that is `unavailable` reads as
 no data rather than silently falling back.
@@ -262,7 +262,7 @@ no data rather than silently falling back.
 | Option          | Type                           | Default                 | Description                                                                      |
 | --------------- | ------------------------------ | ----------------------- | -------------------------------------------------------------------------------- |
 | `mode`          | `compute` \| `entity` \| `off` | `compute`               |                                                                                  |
-| `entity`        | entity                         | —                       | Label source when `mode: entity`.                                                |
+| `entity`        | entity                         | -                       | Label source when `mode: entity`.                                                |
 | `weak_below`    | number                         | `5`                     | In the wind source's unit.                                                       |
 | `sideways_from` | number                         | `45`                    | Degrees, 1–90.                                                                   |
 | `labels`        | map                            | English/Dutch built-ins | Override any of `front_to_back`, `back_to_front`, `sideways`, `weak`, `unknown`. |
@@ -281,12 +281,12 @@ no data rather than silently falling back.
 | Option         | Type                                             | Default     | Description                                                                                          |
 | -------------- | ------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------- |
 | `tiles`        | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto`      | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
-| `tile_url`     | string                                           | —           | Your own tile server. Overrides `tiles`.                                                             |
+| `tile_url`     | string                                           | -           | Your own tile server. Overrides `tiles`.                                                             |
 | `attribution`  | boolean                                          | `true`      |                                                                                                      |
 | `interactive`  | boolean                                          | `false`     | Allow pan and zoom.                                                                                  |
 | `filter`       | CSS filter                                       | per basemap | e.g. `brightness(0.62) contrast(1.05)`.                                                              |
 | `aspect_ratio` | string                                           | `4 / 3`     |                                                                                                      |
-| `height`       | number                                           | —           | Fixed pixel height; overrides `aspect_ratio`.                                                        |
+| `height`       | number                                           | -           | Fixed pixel height; overrides `aspect_ratio`.                                                        |
 
 ### Wind flow
 
@@ -315,7 +315,7 @@ removed, and draws a single still frame if you have reduced motion enabled.
 
 Each row is one of three kinds.
 
-**Built-in value** — no entity needed:
+**Built-in value**, no entity needed:
 
 ```yaml
 - source: airflow # airflow | speed | gust | bearing | cardinal
@@ -330,7 +330,7 @@ Each row is one of three kinds.
   precision: 1
 ```
 
-**Template** — rendered over the websocket API, same as any other template card:
+**Template**, rendered over the websocket API, same as any other template card:
 
 ```yaml
 - template: "{{ states('sensor.window_airflow_direction') }}"
@@ -345,7 +345,7 @@ A `large` row takes the full width on its own line; `normal` and `small` rows sh
 ## Attribution and fair use
 
 The default basemaps are served by OpenStreetMap and CARTO under their public tile usage
-policies. Attribution is shown by default — please leave it on. If you embed this card on
+policies. Attribution is shown by default; please leave it on. If you embed this card on
 many dashboards or run kiosk displays that reload constantly, point `tile_url` at your own
 tile server.
 
@@ -366,7 +366,7 @@ value is a quick way to confirm.
 **The arrow points the opposite way to what I expect**
 `wind_bearing` in Home Assistant is the direction the wind comes _from_; the arrow points the
 way the air travels, which is the reciprocal. If it is still wrong, your integration may be
-reporting a travel direction instead — override it with `wind.bearing_entity`.
+reporting a travel direction instead. Override it with `wind.bearing_entity`.
 
 **Airflow says Sideways when it looks head-on**
 Re-check `house.facade_bearing` in the editor with the alignment guide. The common
@@ -391,11 +391,11 @@ npm run dev
 
 Three harnesses run against a mock `hass` object, with no Home Assistant instance needed:
 
-- `http://localhost:5173` — the card, with sliders for wind bearing, speed and facade
+- `http://localhost:5173`: the card, with sliders for wind bearing, speed and facade
   orientation, and a toggle for the animated flow.
-- `http://localhost:5173/picker.html` — the editor's facade picker, including live
+- `http://localhost:5173/picker.html`: the editor's facade picker, including live
   OpenStreetMap detection.
-- `http://localhost:5173/editor.html` — the whole visual editor, with the resulting YAML
+- `http://localhost:5173/editor.html`: the whole visual editor, with the resulting YAML
   beside it. The Home Assistant frontend elements it needs are stubbed in `dev/ha-stubs.ts`.
 
 ```bash

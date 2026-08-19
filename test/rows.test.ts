@@ -32,7 +32,7 @@ function context(overrides: Partial<RowContext> = {}): RowContext {
   };
 }
 
-describe('resolveRow — built-in sources', () => {
+describe('resolveRow: built-in sources', () => {
   it('renders the airflow label', () => {
     const row = resolveRow(context(), { source: 'airflow', size: 'large' }, 0);
     expect(row.value).toBe('Front → Back');
@@ -84,7 +84,7 @@ describe('resolveRow — built-in sources', () => {
   });
 });
 
-describe('resolveRow — entities', () => {
+describe('resolveRow: entities', () => {
   it('falls back to state plus unit when the frontend formatter is absent', () => {
     expect(resolveRow(context(), { entity: 'sensor.temp' }, 0).value).toBe('21.348 °C');
   });
@@ -127,7 +127,7 @@ describe('resolveRow — entities', () => {
   });
 });
 
-describe('resolveRow — templates', () => {
+describe('resolveRow: templates', () => {
   it('renders the subscription result', () => {
     expect(resolveRow(context(), { template: 'anything' }, 0).value).toBe('rendered');
   });

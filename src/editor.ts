@@ -160,7 +160,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             ${
               hasCoords
                 ? nothing
-                : html`No coordinates set — falling back to your Home Assistant home location.`
+                : html`No coordinates set, falling back to your Home Assistant home location.`
             }
             Searching uses OpenStreetMap's Nominatim service once per search; the result is stored
             as coordinates, so nothing is looked up while the card is running.
@@ -383,7 +383,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
           ${
             rows.length === 0
               ? html`<p class="hint">
-                  No rows configured — the card falls back to airflow, wind speed and bearing.
+                  No rows configured. The card falls back to airflow, wind speed and bearing.
                 </p>`
               : nothing
           }

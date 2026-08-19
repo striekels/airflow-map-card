@@ -109,7 +109,7 @@ bug:
 
 `dev/ha-stubs.ts` stands in for the Home Assistant frontend elements the editor uses so
 `/editor.html` works outside Home Assistant. The `ha-form` stub reproduces the real
-component's data semantics deliberately rather than approximating them — an approximation
+component's data semantics deliberately rather than approximating them: an approximation
 would hide exactly the nesting mistakes the harness exists to catch. If you change it, copy
 the behaviour from the frontend source rather than guessing.
 
@@ -125,7 +125,10 @@ that property.
 - Comments explain _why_, especially where the code looks odd. Most of the odd-looking code
   here is odd because of a specific bug; say which.
 - Conventional Commits.
-- No em dashes in generated text.
+- No em dashes in prose, including comments, documentation and commit messages. The one
+  exception is the card's own output: an em dash is the placeholder a row renders when a
+  reading is missing, in `data/rows.ts` and the card's aria label. That is a glyph the user
+  sees, not writing, and a hyphen there reads as a minus sign.
 
 ## Branch protection
 
@@ -152,7 +155,7 @@ An ordinary change is therefore: edit, test, write the entry under `## [Unreleas
 
 Releasing, only when explicitly asked for:
 
-1. Move the `## [Unreleased]` entries under a new `## [x.y.z] — date` heading and add the
+1. Move the `## [Unreleased]` entries under a new `## [x.y.z] - date` heading and add the
    compare link at the foot of the file.
 2. Set the same version in `package.json` and in `CARD_VERSION` in `src/const.ts`.
 3. Commit, then `git tag -a vx.y.z` and push the tag.

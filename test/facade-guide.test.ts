@@ -3,7 +3,7 @@ import { RADIUS, WALL_HALF_LENGTH, arcPath, sectorPath } from '../src/overlay/fa
 
 /**
  * Pull the two arc endpoints out of a sector path. Matched positionally rather
- * than by scanning for number pairs — the arc command's radii would otherwise
+ * than by scanning for number pairs: the arc command's radii would otherwise
  * be mistaken for a coordinate.
  */
 function points(path: string): [[number, number], [number, number]] {

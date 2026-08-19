@@ -19,7 +19,7 @@ interface Item {
  *
  * This is the whole point of the test. Grouping settings that live under
  * different config keys behind one panel depends on those groups being
- * nameless, and adding a name does not throw or warn — it just starts writing
+ * nameless, and adding a name does not throw or warn; it just starts writing
  * to `config.appearance.arrow.size` instead of `config.arrow.size`, which the
  * card reads as unset.
  */

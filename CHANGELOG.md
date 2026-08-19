@@ -9,7 +9,7 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
-## [1.1.0] — 2026-08-19
+## [1.1.0] - 2026-08-19
 
 ### Added
 
@@ -37,7 +37,7 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
   `resolveTiles` now reports whether the basemap is dark and the outline takes its ink from
   that. Slightly stronger too, at 0.7 rather than 0.45: it should be quiet, not absent.
 
-## [1.0.0] — 2026-08-19
+## [1.0.0] - 2026-08-19
 
 First stable release. From here the configuration format is a contract: it changes only with
 a major version, and an option that stops working is removed and named here rather than left
@@ -119,7 +119,7 @@ only a contract if the options in it do what they say.
   its last painted frame, which is why it looked frozen rather than blank or missing. It is
   now rebuilt on reconnect, alongside the map, which already had the same treatment.
 
-## [0.5.1] — 2026-08-18
+## [0.5.1] - 2026-08-18
 
 ### Fixed
 
@@ -137,7 +137,7 @@ only a contract if the options in it do what they say.
   Measured as the spread of particles across the map, from the upwind edge, at the 10th, 50th
   and 90th percentile. At 3 km/h: 98, 98, 99 per cent before, against 13, 38, 75 after.
 
-## [0.5.0] — 2026-08-18
+## [0.5.0] - 2026-08-18
 
 ### Added
 
@@ -190,7 +190,7 @@ only a contract if the options in it do what they say.
   moving to flat config, and `@typescript-eslint/no-explicit-any` is enforced now instead of
   switched off.
 
-## [0.4.2] — 2026-08-18
+## [0.4.2] - 2026-08-18
 
 ### Added
 
@@ -258,7 +258,7 @@ only a contract if the options in it do what they say.
   is invalid and hid the one control there that carries meaning. The slider is now reachable,
   and reports the bearing to a tenth of a degree.
 
-## [0.4.1] — 2026-08-17
+## [0.4.1] - 2026-08-17
 
 ### Fixed
 
@@ -279,7 +279,7 @@ only a contract if the options in it do what they say.
 
   This supersedes the diagnosis in 0.3.1, which described a real 406 but not this one.
 
-## [0.4.0] — 2026-08-15
+## [0.4.0] - 2026-08-15
 
 ### Changed
 
@@ -314,7 +314,7 @@ only a contract if the options in it do what they say.
   context and outranked the scrim. The card and the editor's picker now both declare
   `isolation: isolate`, containing every z-index they use.
 
-## [0.3.4] — 2026-08-15
+## [0.3.4] - 2026-08-15
 
 ### Changed
 
@@ -325,7 +325,7 @@ only a contract if the options in it do what they say.
 
   The card's own basemap is unaffected and still follows `map.tiles`.
 
-## [0.3.3] — 2026-08-15
+## [0.3.3] - 2026-08-15
 
 ### Fixed
 
@@ -346,7 +346,7 @@ only a contract if the options in it do what they say.
 `src/map/tiles.ts` had no tests despite deciding what every user sees. It has seven now,
 including one pinning the interaction that caused this.
 
-## [0.3.2] — 2026-08-15
+## [0.3.2] - 2026-08-15
 
 ### Added
 
@@ -356,7 +356,7 @@ including one pinning the interaction that caused this.
   it, and affects the editor only: the card's own basemap is still set by `map.theme` and
   `map.tiles`.
 
-## [0.3.1] — 2026-08-15
+## [0.3.1] - 2026-08-15
 
 ### Fixed
 
@@ -375,7 +375,7 @@ Acceptable` **and no `Access-Control-Allow-Origin` header**, so the browser repo
   The `Origin` header was ruled out along the way: Overpass returns
   `Access-Control-Allow-Origin: *` for a plain-HTTP origin such as `http://ha.local:8123`.
 
-## [0.3.0] — 2026-08-15
+## [0.3.0] - 2026-08-15
 
 ### Fixed
 
@@ -406,14 +406,14 @@ Acceptable` **and no `Access-Control-Allow-Origin` header**, so the browser repo
   where the result can be saved, and a saved dashboard has no use for it. Existing configs
   carrying either option keep working; the options are simply ignored.
 
-  This removes the whole drag-on-card path with it — around 200 lines of interaction,
+  This removes the whole drag-on-card path with it, around 200 lines of interaction,
   persistence and styling, and 4 kB off the bundle. That path only ever worked when
   `facade_bearing_entity` pointed at a settable entity, which made it a narrow feature with
   a wide failure surface.
 
   `facade_bearing_entity` remains, now purely as a way to read the bearing from an entity.
 
-## [0.2.5] — 2026-08-15
+## [0.2.5] - 2026-08-15
 
 ### Changed
 
@@ -433,7 +433,7 @@ No mirror endpoints are shipped, and that is deliberate. The obvious candidates 
 and two others were unreachable. Shipping an endpoint that has not been verified is worse
 than retrying one that has.
 
-## [0.2.4] — 2026-08-15
+## [0.2.4] - 2026-08-15
 
 ### Changed
 
@@ -444,7 +444,7 @@ than retrying one that has.
   documenting every modifier key, which is not what someone reads while dragging a line onto
   a roof. The three levels of adjustment are in the README instead.
 
-## [0.2.3] — 2026-08-15
+## [0.2.3] - 2026-08-15
 
 ### Fixed
 
@@ -458,7 +458,7 @@ white))`, and a theme setting only the latter fell straight through to the liter
   same chain `ha-card` itself uses. This also affected the map attribution bar, the editor's
   bearing readout and the house-number labels, which had the identical fallback.
 
-## [0.2.2] — 2026-08-14
+## [0.2.2] - 2026-08-14
 
 ### Fixed
 
@@ -469,8 +469,8 @@ white))`, and a theme setting only the latter fell straight through to the liter
   container's `inset: 0` stretches nothing, so the map collapsed to zero height and looked
   identical to a map that had failed to load.
 
-  The container's position is now declared `!important` — the only thing that outranks a
-  third-party inline style — and also set inline, since Leaflet checks `el.style.position`
+  The container's position is now declared `!important`: the only thing that outranks a
+  third-party inline style, and also set inline, since Leaflet checks `el.style.position`
   before the computed value and leaves an already-positioned element alone.
 
   The earlier 0.1.1 fix, which replaced `aspect-ratio` with a padding spacer, addressed a
@@ -483,7 +483,7 @@ white))`, and a theme setting only the latter fell straight through to the liter
   clickable. All four are now native buttons styled from Home Assistant theme variables,
   with no dependency on frontend internals.
 
-## [0.2.1] — 2026-08-11
+## [0.2.1] - 2026-08-11
 
 ### Added
 
@@ -494,7 +494,7 @@ white))`, and a theme setting only the latter fell straight through to the liter
 - Clicking a building is treated as better information than the coordinate, so it does not
   raise the "not inside any mapped building" warning that an automatic fallback does.
 
-## [0.2.0] — 2026-08-11
+## [0.2.0] - 2026-08-11
 
 Facade alignment reworked around the observation that nobody should be typing an angle.
 
@@ -518,7 +518,7 @@ Facade alignment reworked around the observation that nobody should be typing an
   settable entity. Previously it would accept a drag it could not persist and ask the user
   to copy a number by hand; that dead end is gone rather than merely signposted.
 
-## [0.1.3] — 2026-08-11
+## [0.1.3] - 2026-08-11
 
 ### Added
 
@@ -538,7 +538,7 @@ A card cannot write its own Lovelace config. A dragged bearing is persisted with
 it is held for the session and the readout says it is unsaved rather than implying
 otherwise.
 
-## [0.1.2] — 2026-08-11
+## [0.1.2] - 2026-08-11
 
 ### Changed
 
@@ -548,7 +548,7 @@ otherwise.
   the dashes keep the roofline visible underneath. Rim arc, chevron and sector fills all
   toned down to match.
 
-## [0.1.1] — 2026-08-11
+## [0.1.1] - 2026-08-11
 
 ### Fixed
 
@@ -560,7 +560,7 @@ otherwise.
 - A failed map now reports the error on the card face instead of leaving a blank area that
   is indistinguishable from a sizing bug.
 
-## [0.1.0] — 2026-08-11
+## [0.1.0] - 2026-08-11
 
 First working version.
 

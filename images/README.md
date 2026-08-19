@@ -4,12 +4,12 @@ Referenced from the project README, which keeps them commented out until they ex
 
 Worth capturing:
 
-**`card.png`** — the card on a real dashboard. The point of the card is the verdict, so
+**`card.png`**: the card on a real dashboard. The point of the card is the verdict, so
 frame it when the airflow is something other than "weak wind": the arrow coloured, the
 house outline visible under it, and the info rows readable. A dark dashboard shows the
 basemap theming off better than a light one.
 
-**`editor.png`** — the **Where** section mid-alignment: the map over a real building, the
+**`editor.png`**: the **Where** section mid-alignment: the map over a real building, the
 guide line lying along the front wall, and the bearing readout. This is the part people will
 not believe works until they see it.
 
