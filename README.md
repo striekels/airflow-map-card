@@ -9,14 +9,9 @@
 points an arrow the way the wind is actually travelling, and tells you whether that airflow
 runs front to back, back to front, or merely across the front of the house.
 
-<!--
-  SCREENSHOTS GO HERE. Drop the PNGs into images/ and uncomment:
-
-  ![The card on a dashboard](images/card.png)
-  ![Detecting the facade in the editor](images/editor.png)
-
-  See images/README.md for what to capture.
--->
+<p align="center">
+  <img src="images/card.png" alt="The card on a dashboard: a wind arrow over a mapped house, with the verdict Back to Front underneath" width="420">
+</p>
 
 It replaces the usual `picture-elements` plus static PNG plus `card_mod` recipe. The map is
 live, so it stays sharp at any zoom and never needs regenerating when you move the view, and
@@ -172,6 +167,10 @@ and stores the result as coordinates — nothing is looked up while the card is 
 | `footprint`             | list   | —       | Building outline as `[lat, lon]` pairs. Written by Detect; drawn on the card. |
 
 #### Aligning the facade
+
+<p align="center">
+  <img src="images/editor.png" alt="The editor's Where section: address search, a map with the alignment guide, and the Detect button" width="380">
+</p>
 
 Open the card editor and look for **Where**. Pan the map to your house, press
 **Detect from OpenStreetMap**, and you are usually done.
@@ -416,8 +415,8 @@ by the maintainer. Fork the repository, work on a branch, and open a PR against 
 
 Most useful right now:
 
-- **Screenshots.** The card has been seen on exactly one dashboard. See
-  [images/README.md](images/README.md) for what is worth capturing.
+- **Screenshots from other setups.** Different themes, integrations and house shapes. See
+  [images/README.md](images/README.md).
 - **Reports from other weather integrations.** The airflow maths has been checked against one
   setup; wind units and `wind_bearing` conventions differ between integrations, and a
   mismatch produces a plausible wrong answer rather than an obvious failure.
