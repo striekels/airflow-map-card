@@ -60,4 +60,26 @@ describe('resolveTiles', () => {
       expect(spec.maxZoom).toBeGreaterThanOrEqual(19);
     }
   });
+
+  it('reports whether the basemap is dark, which is not the dashboard theme', () => {
+    // Anything drawn on the map contrasts with the map. These are independent:
+    // a pinned basemap means a dark dashboard can carry a light map, and styling
+    // the house outline from the dashboard's text colour drew it near-white on a
+    // near-white map, where it could not be seen at all.
+    expect(resolveTiles({ tiles: 'osm' }, true).dark).toBe(false);
+    expect(resolveTiles({ tiles: 'carto-light' }, true).dark).toBe(false);
+    expect(resolveTiles({ tiles: 'carto-dark' }, false).dark).toBe(true);
+  });
+
+  it('follows the dashboard only when the basemap is automatic', () => {
+    expect(resolveTiles({}, true).dark).toBe(true);
+    expect(resolveTiles({}, false).dark).toBe(false);
+    expect(resolveTiles({ tiles: 'auto' }, true).dark).toBe(true);
+  });
+
+  it('assumes a custom tile server is light, the safer way to be wrong', () => {
+    expect(resolveTiles({ tile_url: 'https://example.com/{z}/{x}/{y}.png' }, true).dark).toBe(
+      false,
+    );
+  });
 });

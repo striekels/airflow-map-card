@@ -9,6 +9,19 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The house outline was invisible on a dark dashboard with a light basemap.** It was styled
+  from the dashboard's primary text colour, which on a dark theme is near-white, while the
+  outline is drawn on tiles whose lightness `map.tiles` sets independently. Pin `tiles: osm`
+  on a dark dashboard, which is a perfectly ordinary thing to want, and the card drew a
+  near-white outline on a near-white map at 45 per cent opacity. It was there and could not
+  be seen.
+
+  Anything drawn on the map has to contrast with the map, not with the card around it, so
+  `resolveTiles` now reports whether the basemap is dark and the outline takes its ink from
+  that. Slightly stronger too, at 0.7 rather than 0.45: it should be quiet, not absent.
+
 ### Added
 
 - **The editor says whether a building outline is stored, and can clear it.** Detect writes

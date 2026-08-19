@@ -6,6 +6,16 @@ export interface TileSpec {
   maxZoom: number;
   /** CSS filter applied to the tile pane when `map.filter` is not set. */
   filter: string;
+  /**
+   * Whether this basemap is dark.
+   *
+   * Anything drawn *on* the map has to contrast with the map, not with the
+   * dashboard around it. Those are independent: a pinned `tiles` value means a
+   * dark dashboard can carry a light basemap, and the house outline was styled
+   * from the dashboard's text colour, so on exactly that combination it came out
+   * near-white on a near-white map and vanished.
+   */
+  dark: boolean;
 }
 
 const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
@@ -19,18 +29,21 @@ export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom' | 'auto'>, TileSp
     // Muted so a saturated arrow reads clearly on top, echoing the
     // brightness/saturate treatment this card replaces.
     filter: 'saturate(0.7) brightness(0.95)',
+    dark: false,
   },
   'carto-light': {
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     attribution: CARTO_ATTRIBUTION,
     maxZoom: 19,
     filter: 'none',
+    dark: false,
   },
   'carto-dark': {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: CARTO_ATTRIBUTION,
     maxZoom: 19,
     filter: 'none',
+    dark: true,
   },
 };
 
@@ -52,6 +65,9 @@ export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpe
       attribution: OSM_ATTRIBUTION,
       maxZoom: 19,
       filter: 'none',
+      // A custom server could be anything. Most are light, so assume light and
+      // draw dark ink on it, which is the safer way to be wrong.
+      dark: false,
     };
   } else if (pinned) {
     spec = TILE_PRESETS[config.tiles as Exclude<TilePreset, 'custom' | 'auto'>];

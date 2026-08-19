@@ -196,7 +196,12 @@ export class AirflowMapCard extends LitElement {
       <ha-card>
         ${this._config.title ? html`<h1 class="card-header">${this._config.title}</h1>` : nothing}
         <div
-          class=${classMap({ 'map-wrapper': true, 'fixed-height': !!mapConfig.height })}
+          class=${classMap({
+            'map-wrapper': true,
+            'fixed-height': !!mapConfig.height,
+            // Anything drawn on the map contrasts with the map, not the card.
+            'basemap-dark': tiles.dark,
+          })}
           style=${styleMap(
             mapConfig.height
               ? { height: `${mapConfig.height}px` }
@@ -523,16 +528,28 @@ export class AirflowMapCard extends LitElement {
      * viewport, and the map rendered nothing at all.
      */
     /*
-     * The house outline. Faint on purpose: it is there so the arrow reads
-     * against the actual shape of the building rather than a generic map, and
-     * it should never compete with the arrow for attention.
+     * The house outline, with its ink chosen against the basemap rather than
+     * against the dashboard.
+     *
+     * This used the dashboard's primary text colour, while the outline is drawn
+     * on tiles whose lightness map.tiles sets separately. A dark dashboard with
+     * a pinned light basemap therefore drew a near-white outline on a near-white
+     * map at 0.45 opacity, and it simply could not be seen. The two are
+     * independent, so the colour follows the one the shape actually sits on.
      */
     .building-footprint {
-      stroke: var(--primary-text-color, #212121);
-      stroke-opacity: 0.45;
-      fill: var(--primary-text-color, #212121);
-      fill-opacity: 0.06;
+      stroke: #10161d;
+      stroke-opacity: 0.7;
+      fill: #10161d;
+      fill-opacity: 0.1;
       pointer-events: none;
+    }
+
+    .basemap-dark .building-footprint {
+      stroke: #f2f5f8;
+      stroke-opacity: 0.75;
+      fill: #f2f5f8;
+      fill-opacity: 0.12;
     }
 
     /* Over the tiles, under the arrow, and never in the way of a pan. */
