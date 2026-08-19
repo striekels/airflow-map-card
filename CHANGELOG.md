@@ -9,6 +9,19 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
+### Added
+
+- **The editor says whether a building outline is stored, and can clear it.** Detect writes
+  `house.footprint` silently, and the only way to stop the card drawing your building was to
+  hand-edit the YAML, which is a poor answer in a visual editor. The **Where** section now
+  reports the outline and offers **Clear outline**.
+
+  A button rather than a toggle: keeping the outline is not a setting, it is data, and adding
+  an option to ignore data you are already storing would be a knob that earns nothing.
+
+  Cards configured before 1.0.0 have no outline and nothing backfills one, so the same place
+  now says so and points at Detect.
+
 ## [1.0.0] — 2026-08-19
 
 First stable release. From here the configuration format is a contract: it changes only with

@@ -130,6 +130,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
                   ></airflow-facade-picker>
                 `
           }
+          ${this._renderFootprintStatus()}
 
           <ha-expansion-panel
             outlined
@@ -167,6 +168,41 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
         </div>
       </ha-expansion-panel>
     `;
+  }
+
+  /**
+   * Say whether an outline is stored, and offer a way to be rid of it.
+   *
+   * Detect writes `house.footprint` silently, and until this existed the only
+   * way to stop the card drawing your building was to hand-edit the YAML, which
+   * is a poor answer in a visual editor. Storing it is not a setting, so this is
+   * a button rather than a toggle: there is no state to configure, only data to
+   * keep or discard.
+   */
+  private _renderFootprintStatus(): TemplateResult {
+    const points = this._config.house?.footprint?.length ?? 0;
+
+    if (points === 0) {
+      return html`<p class="hint">
+        No building outline stored. Press Detect to read one from OpenStreetMap; the card draws it
+        faintly under the arrow.
+      </p>`;
+    }
+
+    return html`
+      <div class="footprint-row">
+        <span class="hint">
+          Building outline stored, ${points} points. The card draws it under the arrow.
+        </span>
+        <button class="secondary" @click=${this._clearFootprint}>Clear outline</button>
+      </div>
+    `;
+  }
+
+  private _clearFootprint(): void {
+    const house = { ...this._config.house };
+    delete house.footprint;
+    this._updateConfig({ house });
   }
 
   /** Collapsed-state summary, so the panel still says where the card points. */
@@ -501,6 +537,17 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     .address-input:focus-visible {
       outline: 2px solid var(--primary-color, #03a9f4);
       outline-offset: -1px;
+    }
+
+    .footprint-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footprint-row .hint {
+      flex: 1 1 200px;
     }
 
     .hint {

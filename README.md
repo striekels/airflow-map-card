@@ -195,8 +195,12 @@ map tile. Nothing is looked up while the card runs: the outline is a handful of 
 pairs in the config.
 
 The outline belongs to one building, so anything that moves the card without detecting
-again, an address search, **Use home**, or typing new coordinates, clears it. Delete
-`house.footprint` if you would rather the card did not draw it.
+again, an address search, **Use home**, or typing new coordinates, clears it. The editor says
+whether one is stored and offers **Clear outline** if you would rather the card did not draw
+it.
+
+Cards configured before 1.0.0 have no outline stored, and nothing backfills one. Press
+**Detect** once and it is saved with everything else.
 
 **If it picked the wrong building, click yours on the map.** The detection re-runs against
 that outline. This is worth doing whenever the highlighted house is not the right number:
