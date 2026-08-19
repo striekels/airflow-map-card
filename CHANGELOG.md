@@ -9,18 +9,7 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
 ## [Unreleased]
 
-### Fixed
-
-- **The house outline was invisible on a dark dashboard with a light basemap.** It was styled
-  from the dashboard's primary text colour, which on a dark theme is near-white, while the
-  outline is drawn on tiles whose lightness `map.tiles` sets independently. Pin `tiles: osm`
-  on a dark dashboard, which is a perfectly ordinary thing to want, and the card drew a
-  near-white outline on a near-white map at 45 per cent opacity. It was there and could not
-  be seen.
-
-  Anything drawn on the map has to contrast with the map, not with the card around it, so
-  `resolveTiles` now reports whether the basemap is dark and the outline takes its ink from
-  that. Slightly stronger too, at 0.7 rather than 0.45: it should be quiet, not absent.
+## [1.1.0] — 2026-08-19
 
 ### Added
 
@@ -34,6 +23,19 @@ per change; see the release steps in [CLAUDE.md](CLAUDE.md).
 
   Cards configured before 1.0.0 have no outline and nothing backfills one, so the same place
   now says so and points at Detect.
+
+### Fixed
+
+- **The house outline was invisible on a dark dashboard with a light basemap.** It was styled
+  from the dashboard's primary text colour, which on a dark theme is near-white, while the
+  outline is drawn on tiles whose lightness `map.tiles` sets independently. Pin `tiles: osm`
+  on a dark dashboard, which is a perfectly ordinary thing to want, and the card drew a
+  near-white outline on a near-white map at 45 per cent opacity. It was there and could not
+  be seen.
+
+  Anything drawn on the map has to contrast with the map, not with the card around it, so
+  `resolveTiles` now reports whether the basemap is dark and the outline takes its ink from
+  that. Slightly stronger too, at 0.7 rather than 0.45: it should be quiet, not absent.
 
 ## [1.0.0] — 2026-08-19
 
@@ -581,7 +583,8 @@ First working version.
 - Accessibility: the arrow carries a spoken description of the current wind and airflow,
   rows are keyboard-operable, and transitions respect `prefers-reduced-motion`.
 
-[unreleased]: https://github.com/striekels/airflow-map-card/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/striekels/airflow-map-card/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/striekels/airflow-map-card/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/striekels/airflow-map-card/compare/v0.5.1...v1.0.0
 [0.5.1]: https://github.com/striekels/airflow-map-card/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/striekels/airflow-map-card/compare/v0.4.2...v0.5.0
