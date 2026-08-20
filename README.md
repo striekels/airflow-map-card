@@ -38,6 +38,7 @@ your Home Assistant version, the card version from the browser console, and your
 - [Quick start](#quick-start)
 - [How the direction works](#how-the-direction-works)
 - [Options](#options)
+- [Upgrading](#upgrading)
 - [Attribution and fair use](#attribution-and-fair-use)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -363,6 +364,20 @@ Shared options: `name` (or `false` to hide), `icon` (or `false`), `prefix`, `suf
 `unit` (or `false`), `precision`, `size` (`small` / `normal` / `large`), `tap_action`.
 
 A `large` row takes the full width on its own line; `normal` and `small` rows share a line.
+
+## Upgrading
+
+### 1.x to 2.0
+
+Two defaults changed, so a dashboard that set nothing will look different after the update:
+
+- **The flow animation is now on**, and the arrow is now off. Previously it was the other
+  way round. To keep the old look, set `arrow: { show: true }` and `flow: { show: false }`.
+- **`arrow.hide` and `flow.hide` are gone.** Use `show`, which is the positive form: `true`
+  means visible, in the editor and in YAML alike. A leftover `hide` key is ignored rather
+  than rejected, so a card carrying one keeps working, at the new defaults.
+
+The visual editor writes the new keys for you. Opening the card's editor and saving is enough.
 
 ## Attribution and fair use
 

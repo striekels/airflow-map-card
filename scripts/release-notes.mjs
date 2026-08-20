@@ -44,6 +44,12 @@ function previousTag(cwd) {
   }
 }
 
+// Anchored to the start of a line and requiring the colon, because the
+// conventional commits spec makes this a footer token rather than a phrase. A
+// substring search read a commit that merely described the footer in prose as
+// a breaking change, and put a test fix at the top of the release page.
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
+
 /** `type(scope)!: subject`, plus a body scanned for a breaking-change footer. */
 function parse(entry) {
   const [sha, subject, ...bodyLines] = entry.split('\n');
@@ -51,7 +57,7 @@ function parse(entry) {
   if (!match) return null;
 
   const { type, scope, bang, rest } = match.groups;
-  const breaking = Boolean(bang) || bodyLines.join('\n').includes('BREAKING CHANGE');
+  const breaking = Boolean(bang) || BREAKING_FOOTER.test(bodyLines.join('\n'));
   return { sha, type, scope, subject: rest, breaking };
 }
 
@@ -122,5 +128,8 @@ export function nextVersion(current, from, { cwd } = {}) {
 // nothing at all.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const from = process.argv[2] ?? previousTag();
-  process.stdout.write(releaseNotes(from) + '\n');
+  // The release workflow passes the tag it is building. Left as HEAD, the
+  // compare link on a published release page points at a moving target.
+  const to = process.argv[3] ?? 'HEAD';
+  process.stdout.write(releaseNotes(from, to) + '\n');
 }

@@ -61,6 +61,9 @@ beforeAll(() => {
   git('tag', 'v2.1.0');
 
   commit('docs: tidy the readme');
+  // Describes the footer without being one. A substring search called this a
+  // breaking change and put it at the top of the release page.
+  commit('fix: parse the BREAKING CHANGE footer', 'Mentions BREAKING CHANGE in prose.');
 });
 
 afterAll(() => rmSync(repo, { recursive: true, force: true }));
@@ -107,6 +110,12 @@ describe('releaseNotes', () => {
     expect(notes.split('### Fixes')).toHaveLength(1);
   });
 
+  it('reads BREAKING CHANGE as a footer, not as a phrase in the prose', () => {
+    const notes = releaseNotes('v2.1.0', 'HEAD', { cwd: repo });
+    expect(notes).toContain('### Fixes');
+    expect(notes).not.toContain('### Breaking changes');
+  });
+
   it('keeps a section out when nothing in the range belongs to it', () => {
     expect(releaseNotes('v1.0.0', 'v1.1.0', { cwd: repo })).not.toContain('### Performance');
   });
@@ -125,7 +134,7 @@ describe('nextVersion', () => {
     expect(nextVersion('2.0.0', 'v2.0.0', { cwd: repo })).toBe('2.1.0');
   });
 
-  it('is a patch when nothing but housekeeping landed', () => {
+  it('is a patch for a fix, and is not fooled by prose in the body', () => {
     expect(nextVersion('2.1.0', 'v2.1.0', { cwd: repo })).toBe('2.1.1');
   });
 });

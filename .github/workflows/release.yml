@@ -42,7 +42,7 @@ jobs:
       # from merged pull requests, and this repository is pushed to directly, so
       # it produced a bare compare link and nothing else.
       - name: Build the release notes
-        run: node scripts/release-notes.mjs > RELEASE_NOTES.md
+        run: node scripts/release-notes.mjs "$(git describe --tags --abbrev=0 HEAD^)" "$GITHUB_REF_NAME" > RELEASE_NOTES.md
 
       - uses: softprops/action-gh-release@v2
         with:
