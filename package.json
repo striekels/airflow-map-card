@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "format": "prettier --write \"{src,test,dev}/**/*.{ts,html,css}\""
+    "format": "prettier --write \"{src,test,dev}/**/*.{ts,html,css}\"",
+    "release:notes": "node scripts/release-notes.mjs",
+    "release:next": "node -e \"import('./scripts/release-notes.mjs').then(m=>console.log(m.nextVersion(require('./package.json').version)))\""
   },
   "dependencies": {
     "leaflet": "^1.9.4",

@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Release notes are built from the log, which a shallow clone lacks.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
@@ -35,7 +38,13 @@ jobs:
       - run: node scripts/build.mjs
 
       # HACS downloads this asset directly; the filename must stay stable.
+      # Built from conventional commit subjects. GitHub's own generator works
+      # from merged pull requests, and this repository is pushed to directly, so
+      # it produced a bare compare link and nothing else.
+      - name: Build the release notes
+        run: node scripts/release-notes.mjs > RELEASE_NOTES.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/airflow-map-card.js
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md

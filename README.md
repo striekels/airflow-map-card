@@ -21,8 +21,9 @@ picks the wall facing the street, and sets the angle for you.
 ## Stability
 
 The configuration format is the contract. From 1.0 it changes only with a major version, and
-never silently: an option that stops working is removed and named in
-[CHANGELOG.md](CHANGELOG.md) rather than left in place doing nothing.
+never silently: an option that stops working is removed and named in the
+[release notes](https://github.com/striekels/airflow-map-card/releases) rather than left in
+place doing nothing.
 
 The card has been exercised against a small number of Home Assistant instances and weather
 integrations, so bug reports are genuinely useful, particularly if your integration reports
@@ -477,9 +478,10 @@ Before opening one:
 
 ## Status
 
-[CHANGELOG.md](CHANGELOG.md) records what changed and, more usefully, why: the reasoning
-behind a fix is usually worth more than the fix. Known problems and planned work live in
-[issues](https://github.com/striekels/airflow-map-card/issues).
+Each [release](https://github.com/striekels/airflow-map-card/releases) lists what changed,
+built from the commit subjects. The reasoning lives in the commits themselves, next to the
+diff it explains, and `git log` reads it better than a release page would. Known problems and
+planned work live in [issues](https://github.com/striekels/airflow-map-card/issues).
 
 ## Credits
 
