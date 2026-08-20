@@ -460,8 +460,9 @@ by the maintainer. Fork the repository, work on a branch, and open a PR against 
 
 Most useful right now:
 
-- **Screenshots from other setups.** Different themes, integrations and house shapes. See
-  [images/README.md](images/README.md).
+- **Screenshots from other setups.** Different themes, integrations and house shapes. Keep
+  them under about 1 MB, and avoid anything that identifies a real address more precisely
+  than the feature needs.
 - **Reports from other weather integrations.** The airflow maths has been checked against one
   setup; wind units and `wind_bearing` conventions differ between integrations, and a
   mismatch produces a plausible wrong answer rather than an obvious failure.
