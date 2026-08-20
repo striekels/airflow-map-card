@@ -72,10 +72,20 @@ export interface AirflowConfig {
 }
 
 export interface ArrowConfig {
+  /** Off by default. The flow carries direction and speed together. */
+  show?: boolean;
   size?: number;
   color_mode?: 'airflow' | 'fixed';
   color?: string;
-  hide?: boolean;
+}
+
+export interface FlowConfig {
+  /** On by default. */
+  show?: boolean;
+  /** 0 to 1, scaling the drawn opacity. */
+  opacity?: number;
+  /** Multiplier on how fast the particles travel. 1 is the default pace. */
+  speed?: number;
 }
 
 export type TilePreset = 'auto' | 'osm' | 'carto-light' | 'carto-dark' | 'custom';
@@ -102,10 +112,13 @@ export interface AirflowMapCardConfig {
   arrow?: ArrowConfig;
   map?: MapConfig;
   /**
-   * Animated wind flow over the map. Off by default: it animates
-   * continuously, and a dashboard card often runs all day on a wall tablet.
+   * Animated wind flow over the map, on by default.
+   *
+   * `flow: true` is accepted as shorthand for `flow: { show: true }`, since a
+   * bare boolean is unambiguous against an object and the shorthand was the
+   * whole surface before 2.0.
    */
-  flow?: boolean;
+  flow?: FlowConfig | boolean;
   rows?: RowConfig[];
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;

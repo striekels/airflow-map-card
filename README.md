@@ -5,17 +5,18 @@
 [![HACS](https://img.shields.io/badge/HACS-custom-41BDF5.svg?style=flat-square)](https://hacs.xyz/)
 [![License](https://img.shields.io/github/license/striekels/airflow-map-card?style=flat-square)](LICENSE)
 
-**Should you open the windows?** This Home Assistant card draws your house on a live map,
-points an arrow the way the wind is actually travelling, and tells you whether that airflow
-runs front to back, back to front, or merely across the front of the house.
+**Should you open the windows?** Everyone answers this by licking a finger and holding it up.
+This Home Assistant card does slightly better: it draws your actual house on a live map,
+animates the wind blowing across it, and tells you plainly whether that air will run front to
+back, back to front, or just wash past the front door doing nothing for you.
 
 <p align="center">
   <img src="images/card.png" alt="The card on a dashboard: a wind arrow over a mapped house, with the verdict Back to Front underneath" width="420">
 </p>
 
-It replaces the usual `picture-elements` plus static PNG plus `card_mod` recipe. The map is
-live, so it stays sharp at any zoom and never needs regenerating when you move the view, and
-the facade angle is detected from OpenStreetMap rather than guessed by dragging.
+The card works out which way your house faces by reading its outline from OpenStreetMap, so
+you are not squinting at a compass in the garden. Press one button and it finds the building,
+picks the wall facing the street, and sets the angle for you.
 
 ## Stability
 
@@ -44,15 +45,16 @@ your Home Assistant version, the card version from the browser console, and your
 
 ## What it does
 
-- **Live map** of your house from OpenStreetMap or CARTO tiles, following your dashboard's
-  light or dark theme.
+- **A live map of your actual house**, from OpenStreetMap or CARTO tiles, following your
+  dashboard's light or dark theme. No screenshotting a map and cropping it by hand.
 - **Wind arrow** driven by any `weather` entity, pointing the way the air actually travels.
 - **Airflow verdict** (front to back, back to front, sideways, or too weak to matter),
   computed from the wind bearing and the way your house faces.
 - **One-click facade alignment**: the editor reads your building's outline from
   OpenStreetMap, works out which wall faces the street, and sets the angle for you. Click a
   neighbouring house if it guessed wrong.
-- **Optional animated wind flow** over the map, so speed is visible and not just a number.
+- **Wind you can watch**: particles stream across the map, faster and denser when it blows
+  harder, so speed is something you see rather than a number you read.
 - **Configurable readouts** underneath: built-in values, any entity or attribute, or Jinja
   templates.
 
@@ -88,9 +90,10 @@ serve you a cached build: `/local/airflow-map-card.js?v=1.1.0`.
 
 ## Quick start
 
-Add the card from the dashboard card picker and it works immediately: your Home Assistant
-home coordinates, the first `weather.*` entity it finds, and three default rows. Everything
-below is optional refinement, available in the visual editor.
+Add the card from the dashboard card picker and it already works: your Home Assistant home
+coordinates, the first `weather.*` entity it finds, and three sensible rows. Everything below
+is optional fiddling, all of it available in the visual editor if you would rather not write
+YAML.
 
 ```yaml
 type: custom:airflow-map-card
@@ -115,8 +118,9 @@ rows:
 
 ## How the direction works
 
-Home Assistant's `wind_bearing` is the direction the wind comes **from**. The arrow points
-the way the air actually travels, i.e. the reciprocal.
+Home Assistant's `wind_bearing` is the direction the wind comes **from**, which is a
+meteorological convention and a reliable source of off-by-180 mistakes. The card points
+everything the way the air actually travels, which is the reciprocal.
 
 `house.facade_bearing` is the direction the **front of your house faces**: `0` = north,
 `90` = east. With that, the card classifies the flow:
@@ -139,13 +143,13 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 
 ### Top level
 
-| Option        | Type    | Default                 | Description                                                   |
-| ------------- | ------- | ----------------------- | ------------------------------------------------------------- |
-| `title`       | string  | -                       | Card header. Omit for no header.                              |
-| `flow`        | boolean | `false`                 | Animated wind flow over the map. See [Wind flow](#wind-flow). |
-| `rows`        | list    | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
-| `tap_action`  | action  | -                       | Standard Lovelace action, fired by tapping the arrow.         |
-| `hold_action` | action  | -                       | The same, on long press or right click.                       |
+| Option        | Type   | Default                 | Description                                                   |
+| ------------- | ------ | ----------------------- | ------------------------------------------------------------- |
+| `title`       | string | -                       | Card header. Omit for no header.                              |
+| `flow`        | object | on                      | Animated wind flow over the map. See [Wind flow](#wind-flow). |
+| `rows`        | list   | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
+| `tap_action`  | action | -                       | Standard Lovelace action, fired by tapping the arrow.         |
+| `hold_action` | action | -                       | The same, on long press or right click.                       |
 
 ### `location`
 
@@ -269,12 +273,27 @@ no data rather than silently falling back.
 
 ### `arrow`
 
-| Option       | Type                 | Default    | Description |
-| ------------ | -------------------- | ---------- | ----------- |
-| `size`       | number               | `130`      | Pixels.     |
-| `color_mode` | `airflow` \| `fixed` | `airflow`  |             |
-| `color`      | CSS colour           | per bucket |             |
-| `hide`       | boolean              | `false`    |             |
+Off by default. The flow already shows direction and speed together; the arrow states the
+direction more precisely, and some people want both.
+
+| Option       | Type                 | Default    | Description                           |
+| ------------ | -------------------- | ---------- | ------------------------------------- |
+| `show`       | boolean              | `false`    | Turn the arrow on.                    |
+| `size`       | number               | `130`      | Pixels.                               |
+| `color_mode` | `airflow` \| `fixed` | `airflow`  |                                       |
+| `color`      | CSS colour           | per bucket | Only used when `color_mode` is fixed. |
+
+### `flow`
+
+On by default.
+
+| Option    | Type    | Default | Description                                     |
+| --------- | ------- | ------- | ----------------------------------------------- |
+| `show`    | boolean | `true`  | Turn the animation off if it distracts you.     |
+| `opacity` | number  | `1`     | 0.1 to 1, scaling how strongly it is drawn.     |
+| `speed`   | number  | `1`     | 0.25 to 3, multiplying how fast particles move. |
+
+`flow: true` is still accepted as shorthand for `flow: { show: true }`.
 
 ### `map`
 
@@ -290,12 +309,14 @@ no data rather than silently falling back.
 
 ### Wind flow
 
-Set `flow: true` for an animated flow of particles carried by the wind, drawn over the map.
-Off by default, because it animates continuously and a dashboard often runs all day on a
-wall tablet.
+Particles carried by the wind, drawn over the map. On by default, because it is the fastest
+way to see what the wind is doing without reading a single number.
 
 ```yaml
-flow: true
+flow:
+  show: true
+  opacity: 0.8
+  speed: 1.5
 ```
 
 **It is a uniform flow, not a wind field.** Windy and similar maps advect particles through a

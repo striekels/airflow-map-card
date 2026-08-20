@@ -6,7 +6,7 @@ import { leafletStyles } from './map/leaflet-styles';
 
 import { CARD_TYPE, CARD_VERSION, DEFAULT_ARROW_SIZE, DEFAULT_ZOOM, EDITOR_TYPE } from './const';
 import type { HomeAssistant } from './ha-types';
-import type { AirflowMapCardConfig, RowConfig } from './types';
+import type { AirflowMapCardConfig, FlowConfig, RowConfig } from './types';
 import { MapController } from './map/leaflet-map';
 import { resolveTiles } from './map/tiles';
 import { aspectRatioPadding } from './map/aspect';
@@ -53,6 +53,20 @@ export class AirflowMapCard extends LitElement {
    */
   private _continuousRotation = 0;
   private _lastBearing: number | null = null;
+
+  /**
+   * The flow settings, with `flow: true` accepted as shorthand.
+   *
+   * On by default. The flow shows direction and speed at once, which is the
+   * question the card exists to answer; the arrow says direction more precisely
+   * and is opt-in beside it.
+   */
+  private get _flowConfig(): FlowConfig {
+    const flow = this._config.flow;
+    if (flow === undefined) return { show: true };
+    if (typeof flow === 'boolean') return { show: flow };
+    return { show: true, ...flow };
+  }
 
   static getConfigElement(): HTMLElement {
     return document.createElement(EDITOR_TYPE);
@@ -212,11 +226,10 @@ export class AirflowMapCard extends LitElement {
                before the computed style, so this stops it pinning its own
                position: relative when the card renders while detached. -->
           <div class="map" style=${styleMap({ position: 'absolute', filter: tiles.filter })}></div>
-          ${this._config.flow ? html`<canvas class="flow" aria-hidden="true"></canvas>` : nothing}
+          ${this._flowConfig.show ? html`<canvas class="flow" aria-hidden="true"></canvas>` : nothing}
           ${
-            arrow.hide
-              ? nothing
-              : renderArrow({
+            arrow.show
+              ? renderArrow({
                   rotation: this._arrowRotation(wind.bearing),
                   size: arrow.size ?? DEFAULT_ARROW_SIZE,
                   color: this._arrowColor(airflow),
@@ -228,6 +241,7 @@ export class AirflowMapCard extends LitElement {
                     ? () => this._handleCardAction('hold')
                     : undefined,
                 })
+              : nothing
           }
           ${
             this._mapError
@@ -394,7 +408,7 @@ export class AirflowMapCard extends LitElement {
     const canvas = this._flowElement;
     // Also reached from connectedCallback, which runs before the first render
     // and before `hass` is set, so nothing here may assume either exists.
-    if (!this._config?.flow || !this._hass || !canvas) {
+    if (!this._config || !this._flowConfig.show || !this._hass || !canvas) {
       this._flow?.detach();
       this._flow = undefined;
       return;
@@ -405,12 +419,14 @@ export class AirflowMapCard extends LitElement {
 
     if (!this._flow) this._flow = new WindFlow();
     this._flow.attach(canvas);
+    const flow = this._flowConfig;
     this._flow.update({
       bearing: wind.bearing === null ? null : windTravelBearing(wind.bearing),
       speed: wind.speed,
       unit: wind.speedUnit,
       color: this._arrowColor(airflow),
-      opacity: BUCKET_OPACITY[airflow.bucket],
+      opacity: BUCKET_OPACITY[airflow.bucket] * (flow.opacity ?? 1),
+      pace: flow.speed ?? 1,
     });
   }
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardSchema, rowSchema } from '../src/editor/schema';
+import {
+  FLOW_SETTINGS_SCHEMA,
+  SHOW_SCHEMA,
+  arrowSettingsSchema,
+  cardSchema,
+  mapSchema,
+  rowSchema,
+} from '../src/editor/schema';
 
 interface Item {
   name?: string;
@@ -43,26 +50,17 @@ function leafPaths(schema: Item[], prefix: string[] = []): Record<string, string
 }
 
 describe('cardSchema', () => {
-  const paths = leafPaths(
-    cardSchema({
-      arrow: { color_mode: 'fixed' },
-      airflow: { mode: 'entity' },
-      map: { tiles: 'custom' },
-    }) as Item[],
-  );
+  const paths = leafPaths(cardSchema({ airflow: { mode: 'entity' } }) as Item[]);
 
-  it('keeps the card title at the top level despite living in the Appearance panel', () => {
-    expect(paths.title).toEqual([['title']]);
-  });
-
-  it('writes arrow and map settings under their own config keys', () => {
-    expect(paths.size).toEqual([['arrow', 'size']]);
-    expect(paths.tiles).toEqual([['map', 'tiles']]);
-    expect(paths.tile_url).toEqual([['map', 'tile_url']]);
+  it('holds only the two groups the main form still owns', () => {
+    // Appearance left this schema when its toggles had to sit flat above their
+    // own settings, which `ha-form` cannot express: writing into a nested key
+    // requires being inside a group of that name, and that buries the switch.
+    const titles = (cardSchema() as Item[]).map((item) => item.title);
+    expect(titles).toEqual(['Wind source', 'Airflow classification']);
   });
 
   it('scopes wind and airflow settings correctly where a name is reused', () => {
-    // `entity` appears in both groups; each must land in its own slice.
     expect(paths.entity).toEqual([
       ['wind', 'entity'],
       ['airflow', 'entity'],
@@ -70,52 +68,70 @@ describe('cardSchema', () => {
     expect(paths.weak_below).toEqual([['airflow', 'weak_below']]);
   });
 
-  it('has no group for location or house, which the Where section owns', () => {
-    // These were duplicated as form groups while the map above set the same
-    // values, so the two could disagree.
+  it('offers the airflow entity only when the mode reads from one', () => {
+    const compute = leafPaths(cardSchema({ airflow: { mode: 'compute' } }) as Item[]);
+    expect(compute.entity).toEqual([['wind', 'entity']]);
+  });
+
+  it('has no group for anything the hand-rendered panels own', () => {
     const names = (cardSchema() as Item[]).map((item) => item.name);
-    expect(names).not.toContain('location');
-    expect(names).not.toContain('house');
+    for (const owned of ['location', 'house', 'arrow', 'map', 'flow', 'title']) {
+      expect(names, owned).not.toContain(owned);
+    }
+  });
+});
+
+describe('the show toggles', () => {
+  it('are a single positive boolean, so on means on', () => {
+    // `arrow.hide` inverted this: ticking a box turned the arrow off. Every
+    // toggle now reads the way it is labelled.
+    expect(SHOW_SCHEMA).toHaveLength(1);
+    expect(SHOW_SCHEMA[0].name).toBe('show');
+    expect(SHOW_SCHEMA[0].selector).toEqual({ boolean: {} });
   });
 
-  it('exposes exactly the wind, airflow and appearance groups', () => {
-    const titles = (cardSchema() as Item[]).map((item) => item.title);
-    expect(titles).toEqual(['Wind source', 'Airflow classification', 'Appearance']);
+  it('writes flat into whichever slice it is bound to', () => {
+    expect(leafPaths(SHOW_SCHEMA as Item[])).toEqual({ show: [['show']] });
+  });
+});
+
+describe('arrowSettingsSchema', () => {
+  const named = (arrow: Parameters<typeof arrowSettingsSchema>[0]) =>
+    Object.keys(leafPaths(arrowSettingsSchema(arrow) as Item[]));
+
+  it('offers size and colour mode, and no hide', () => {
+    expect(named({})).toEqual(expect.arrayContaining(['size', 'color_mode']));
+    expect(named({})).not.toContain('hide');
   });
 
-  describe('fields that would be inert are left out', () => {
-    // Each of these was visible and editable in every mode while only taking
-    // effect in one, so setting it looked like it worked and changed nothing.
-    const named = (config: Parameters<typeof cardSchema>[0]) =>
-      Object.keys(leafPaths(cardSchema(config) as Item[]));
+  it('offers a fixed colour only when the mode uses one', () => {
+    expect(named({ color_mode: 'fixed' })).toContain('color');
+    expect(named({ color_mode: 'airflow' })).not.toContain('color');
+    expect(named({})).not.toContain('color');
+  });
+});
 
-    it('offers the arrow colour only when the colour mode is fixed', () => {
-      expect(named({ arrow: { color_mode: 'fixed' } })).toContain('color');
-      expect(named({ arrow: { color_mode: 'airflow' } })).not.toContain('color');
-      expect(named({})).not.toContain('color');
-    });
+describe('FLOW_SETTINGS_SCHEMA', () => {
+  it('offers the two things that were asked for by hand', () => {
+    // Opacity and speed are here because both were tuned by hand more than
+    // once. Nothing else about the flow has ever needed changing.
+    expect(Object.keys(leafPaths(FLOW_SETTINGS_SCHEMA as Item[]))).toEqual(['opacity', 'speed']);
+  });
+});
 
-    it('offers the airflow entity only when the mode reads from one', () => {
-      expect(named({ airflow: { mode: 'entity' } })).toContain('entity');
-      // `entity` still exists under wind, so check the airflow path specifically.
-      expect(leafPaths(cardSchema({ airflow: { mode: 'compute' } }) as Item[]).entity).toEqual([
-        ['wind', 'entity'],
-      ]);
-    });
+describe('mapSchema', () => {
+  const named = (map: Parameters<typeof mapSchema>[0]) =>
+    Object.keys(leafPaths(mapSchema(map) as Item[]));
 
-    it('offers a custom tile URL only when the basemap is set to custom', () => {
-      expect(named({ map: { tiles: 'custom' } })).toContain('tile_url');
-      expect(named({ map: { tiles: 'osm' } })).not.toContain('tile_url');
-    });
+  it('offers a custom tile URL only when the basemap is set to custom', () => {
+    expect(named({ tiles: 'custom' })).toContain('tile_url');
+    expect(named({ tiles: 'osm' })).not.toContain('tile_url');
+  });
 
-    it('keeps a tile URL reachable when an older config already set one', () => {
-      // Before the Custom option existed a `tile_url` could be saved against any
-      // preset, and it wins over the preset. Hiding it would leave the setting
-      // that is actually deciding the basemap impossible to see or clear.
-      expect(
-        named({ map: { tiles: 'osm', tile_url: 'https://example.com/{z}/{x}/{y}.png' } }),
-      ).toContain('tile_url');
-    });
+  it('keeps a tile URL reachable when an older config already set one', () => {
+    expect(named({ tiles: 'osm', tile_url: 'https://example.com/{z}/{x}/{y}.png' })).toContain(
+      'tile_url',
+    );
   });
 });
 

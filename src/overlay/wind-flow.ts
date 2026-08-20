@@ -26,6 +26,8 @@ export interface FlowState {
   unit: string | null;
   color: string;
   opacity: number;
+  /** Multiplier on the drawn speed. 1 is the tuned default pace. */
+  pace: number;
 }
 
 interface Particle {
@@ -93,7 +95,14 @@ export class WindFlow {
   private ctx?: CanvasRenderingContext2D | null;
   private particles: Particle[] = [];
   private frame?: number;
-  private state: FlowState = { bearing: null, speed: null, unit: null, color: '#fff', opacity: 1 };
+  private state: FlowState = {
+    bearing: null,
+    speed: null,
+    unit: null,
+    color: '#fff',
+    opacity: 1,
+    pace: 1,
+  };
   private width = 0;
   private height = 0;
   private visible = true;
@@ -268,7 +277,7 @@ export class WindFlow {
     ctx.globalCompositeOperation = 'source-over';
 
     const ms = toMetresPerSecond(this.state.speed ?? 0, this.state.unit);
-    const px = ms * PX_PER_MS;
+    const px = ms * PX_PER_MS * (this.state.pace || 1);
     // Screen space: y grows downwards, and 0 degrees is north, so the compass
     // bearing is rotated a quarter turn to become a canvas angle.
     const radians = ((this.state.bearing - 90) * Math.PI) / 180;

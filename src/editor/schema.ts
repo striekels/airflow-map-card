@@ -57,12 +57,7 @@ export const EXACT_HOUSE_SCHEMA = [
  * is actually deciding the outcome.
  */
 export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[] {
-  const arrowColorMode = config.arrow?.color_mode ?? 'airflow';
   const airflowMode = config.airflow?.mode ?? 'compute';
-  // `tile_url` overrides the basemap preset wherever it is set, so it is only
-  // offered under the Custom option. Configs written before that option existed
-  // keep it visible, otherwise the field that is winning would be unreachable.
-  const showTileUrl = config.map?.tiles === 'custom' || Boolean(config.map?.tile_url);
 
   return [
     {
@@ -110,78 +105,6 @@ export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[
               name: 'sideways_from',
               selector: { number: { min: 1, max: 90, mode: 'slider', unit_of_measurement: '°' } },
             },
-          ],
-        },
-      ],
-    },
-    {
-      // Pass-through group: no `name`, so `title`, `arrow` and `map` all stay at
-      // the level they belong to. Three top-level config keys, one panel.
-      type: 'expandable',
-      title: 'Appearance',
-      icon: 'mdi:palette-outline',
-      schema: [
-        { name: 'title', selector: { text: {} } },
-        { name: 'flow', selector: { boolean: {} } },
-        {
-          name: 'arrow',
-          type: 'expandable',
-          title: 'Arrow',
-          icon: 'mdi:arrow-up-bold',
-          schema: [
-            {
-              type: 'grid',
-              schema: [
-                { name: 'size', selector: { number: { min: 20, max: 400, mode: 'slider' } } },
-                {
-                  name: 'color_mode',
-                  selector: {
-                    select: {
-                      mode: 'dropdown',
-                      options: [
-                        { value: 'airflow', label: 'By airflow direction' },
-                        { value: 'fixed', label: 'Fixed colour' },
-                      ],
-                    },
-                  },
-                },
-                ...(arrowColorMode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
-                { name: 'hide', selector: { boolean: {} } },
-              ],
-            },
-          ],
-        },
-        {
-          name: 'map',
-          type: 'expandable',
-          title: 'Map',
-          icon: 'mdi:map',
-          schema: [
-            {
-              type: 'grid',
-              schema: [
-                {
-                  name: 'tiles',
-                  selector: {
-                    select: {
-                      mode: 'dropdown',
-                      options: [
-                        { value: 'auto', label: 'Follow the dashboard theme' },
-                        { value: 'osm', label: 'OpenStreetMap (light)' },
-                        { value: 'carto-light', label: 'CARTO light' },
-                        { value: 'carto-dark', label: 'CARTO dark' },
-                        { value: 'custom', label: 'Custom tile URL' },
-                      ],
-                    },
-                  },
-                },
-                { name: 'interactive', selector: { boolean: {} } },
-                { name: 'attribution', selector: { boolean: {} } },
-                { name: 'aspect_ratio', selector: { text: {} } },
-                { name: 'height', selector: { number: { min: 100, max: 1000, mode: 'box' } } },
-              ],
-            },
-            ...(showTileUrl ? [{ name: 'tile_url', selector: { text: {} } }] : []),
           ],
         },
       ],
@@ -268,5 +191,93 @@ export function rowSchema(kind: RowKind): unknown[] {
         },
       ],
     },
+  ];
+}
+
+/** Just the card title, which the Appearance panel renders above the toggles. */
+export const TITLE_SCHEMA = [{ name: 'title', selector: { text: {} } }];
+
+/**
+ * One boolean, rendered flat in the Appearance panel above its own settings.
+ *
+ * A toggle always reads the way it is labelled: on means the thing is on. The
+ * arrow used to be controlled by `arrow.hide`, so ticking a box turned the
+ * arrow off, which is the sort of thing you only misread once but misread every
+ * time after.
+ */
+export const SHOW_SCHEMA = [{ name: 'show', selector: { boolean: {} } }];
+
+export const FLOW_SETTINGS_SCHEMA = [
+  {
+    type: 'grid',
+    schema: [
+      {
+        name: 'opacity',
+        selector: { number: { min: 0.1, max: 1, step: 0.05, mode: 'slider' } },
+      },
+      {
+        name: 'speed',
+        selector: { number: { min: 0.25, max: 3, step: 0.25, mode: 'slider' } },
+      },
+    ],
+  },
+];
+
+export function arrowSettingsSchema(arrow: Partial<AirflowMapCardConfig['arrow']> = {}): unknown[] {
+  const colorMode = arrow?.color_mode ?? 'airflow';
+  return [
+    {
+      type: 'grid',
+      schema: [
+        { name: 'size', selector: { number: { min: 20, max: 400, mode: 'slider' } } },
+        {
+          name: 'color_mode',
+          selector: {
+            select: {
+              mode: 'dropdown',
+              options: [
+                { value: 'airflow', label: 'By airflow direction' },
+                { value: 'fixed', label: 'Fixed colour' },
+              ],
+            },
+          },
+        },
+        ...(colorMode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
+      ],
+    },
+  ];
+}
+
+export function mapSchema(map: Partial<AirflowMapCardConfig['map']> = {}): unknown[] {
+  // `tile_url` overrides the basemap preset wherever it is set, so it is only
+  // offered under the Custom option. Configs written before that option existed
+  // keep it visible, otherwise the field that is winning would be unreachable.
+  const showTileUrl = map?.tiles === 'custom' || Boolean(map?.tile_url);
+  return [
+    {
+      type: 'grid',
+      schema: [
+        {
+          name: 'tiles',
+          selector: {
+            select: {
+              mode: 'dropdown',
+              options: [
+                { value: 'auto', label: 'Follow the dashboard theme' },
+                { value: 'osm', label: 'OpenStreetMap (light)' },
+                { value: 'carto-light', label: 'CARTO light' },
+                { value: 'carto-dark', label: 'CARTO dark' },
+                { value: 'custom', label: 'Custom tile URL' },
+              ],
+            },
+          },
+        },
+        { name: 'interactive', selector: { boolean: {} } },
+        { name: 'attribution', selector: { boolean: {} } },
+        { name: 'aspect_ratio', selector: { text: {} } },
+        { name: 'height', selector: { number: { min: 100, max: 1000, mode: 'box' } } },
+      ],
+    },
+    ...(showTileUrl ? [{ name: 'tile_url', selector: { text: {} } }] : []),
   ];
 }

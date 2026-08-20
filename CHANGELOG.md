@@ -10,6 +10,32 @@ releases that mattered.
 
 ## [Unreleased]
 
+### Changed
+
+- **Every toggle now reads the way it is labelled: on means the thing is on.** `arrow.hide`
+  inverted that, so ticking a box turned the arrow off. It is replaced by `arrow.show`.
+
+- **The flow is on by default and the arrow is off.** The flow answers the card's question
+  faster: it carries direction and speed at once, where the arrow looks identical at 4 km/h
+  and 40. The arrow is still there, one toggle away, for anyone who wants the direction
+  stated precisely.
+
+- **The Appearance panel is rebuilt around those two switches.** Each sits flat in the panel
+  with its own settings behind a dropdown that only appears when it is on, so the first thing
+  you can reach is whether a thing is shown at all. The panel says which are on when
+  collapsed.
+
+- **The flow takes an opacity and a speed.** Both were tuned by hand more than once while
+  building it, which is the only evidence worth having that a setting is wanted.
+
+### Removed
+
+- `arrow.hide`, replaced by `arrow.show` with the sense the other way round.
+
+**Upgrading:** `flow: true` still works and means the same thing. If your YAML sets
+`arrow: { hide: true }`, delete it, since the arrow is off by default now. If it does **not**
+mention the arrow and you want to keep it, add `arrow: { show: true }`.
+
 ## [1.1.0] - 2026-08-19
 
 ### Added

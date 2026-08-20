@@ -5,9 +5,11 @@ import { EDITOR_TYPE, DEFAULT_ZOOM } from './const';
 import type { HomeAssistant } from './ha-types';
 import type {
   AirflowMapCardConfig,
+  FlowConfig,
   HouseConfig,
   LocationConfig,
   LovelaceCardEditor,
+  MapConfig,
   RowConfig,
 } from './types';
 import { fireEvent } from './data/actions';
@@ -17,7 +19,12 @@ import { DEFAULT_SIDEWAYS_FROM } from './data/airflow';
 import {
   EXACT_HOUSE_SCHEMA,
   EXACT_LOCATION_SCHEMA,
+  FLOW_SETTINGS_SCHEMA,
+  SHOW_SCHEMA,
+  TITLE_SCHEMA,
+  arrowSettingsSchema,
   cardSchema,
+  mapSchema,
   rowSchema,
   type RowKind,
 } from './editor/schema';
@@ -49,7 +56,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
           .computeLabel=${this._computeLabel}
           @value-changed=${this._formChanged}
         ></ha-form>
-        ${this._renderRows()}
+        ${this._renderAppearance()} ${this._renderRows()}
       </div>
     `;
   }
@@ -168,6 +175,140 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
         </div>
       </ha-expansion-panel>
     `;
+  }
+
+  // ------------------------------------------------------------- appearance
+
+  /**
+   * Hand-rendered so each toggle can sit flat with its settings nested beneath
+   * it. `ha-form` can only write into a nested key from inside a group of that
+   * name, which would have buried both switches one click deep, and whether the
+   * flow and the arrow are on is the first thing anyone wants to change.
+   *
+   * Every toggle reads the way it is labelled: on means the thing is on.
+   */
+  private _renderAppearance(): TemplateResult {
+    const flow = this._flowConfig;
+    const arrow = this._config.arrow ?? {};
+    const summary = [flow.show ? 'flow' : null, arrow.show ? 'arrow' : null].filter(Boolean);
+
+    return html`
+      <ha-expansion-panel
+        outlined
+        .header=${'Appearance'}
+        .secondary=${summary.length ? `Showing ${summary.join(' and ')}` : 'Map only'}
+      >
+        <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
+        <div class="panel-content">
+          <ha-form
+            .hass=${this.hass}
+            .data=${this._config}
+            .schema=${TITLE_SCHEMA}
+            .computeLabel=${this._computeLabel}
+            @value-changed=${(event: CustomEvent<{ value: { title?: string } }>) => {
+              event.stopPropagation();
+              this._updateConfig({ title: event.detail.value.title });
+            }}
+          ></ha-form>
+
+          ${this._renderToggleGroup({
+            label: 'Animated wind flow',
+            icon: 'mdi:weather-windy',
+            on: Boolean(flow.show),
+            data: flow,
+            settings: FLOW_SETTINGS_SCHEMA,
+            onToggle: (show) => this._updateFlow({ show }),
+            onSettings: (value) => this._updateFlow(value),
+          })}
+          ${this._renderToggleGroup({
+            label: 'Wind arrow',
+            icon: 'mdi:arrow-up-bold',
+            on: Boolean(arrow.show),
+            data: arrow,
+            settings: arrowSettingsSchema(arrow),
+            onToggle: (show) => this._updateConfig({ arrow: { ...this._config.arrow, show } }),
+            onSettings: (value) =>
+              this._updateConfig({ arrow: { ...this._config.arrow, ...value } }),
+          })}
+
+          <ha-expansion-panel outlined .header=${'Map'}>
+            <ha-icon slot="leading-icon" icon="mdi:map"></ha-icon>
+            <div class="panel-content">
+              <ha-form
+                .hass=${this.hass}
+                .data=${this._config.map ?? {}}
+                .schema=${mapSchema(this._config.map)}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${(event: CustomEvent<{ value: MapConfig }>) => {
+                  event.stopPropagation();
+                  this._updateConfig({ map: { ...this._config.map, ...event.detail.value } });
+                }}
+              ></ha-form>
+            </div>
+          </ha-expansion-panel>
+        </div>
+      </ha-expansion-panel>
+    `;
+  }
+
+  /** A switch, then its settings behind a dropdown that only opens when it is on. */
+  private _renderToggleGroup(options: {
+    label: string;
+    icon: string;
+    on: boolean;
+    data: object;
+    settings: unknown[];
+    onToggle: (show: boolean) => void;
+    onSettings: (value: Record<string, unknown>) => void;
+  }): TemplateResult {
+    return html`
+      <div class="toggle-group">
+        <ha-form
+          .hass=${this.hass}
+          .data=${{ show: options.on }}
+          .schema=${SHOW_SCHEMA}
+          .computeLabel=${() => options.label}
+          @value-changed=${(event: CustomEvent<{ value: { show?: boolean } }>) => {
+            event.stopPropagation();
+            options.onToggle(Boolean(event.detail.value.show));
+          }}
+        ></ha-form>
+
+        ${
+          options.on
+            ? html`
+                <ha-expansion-panel outlined .header=${`${options.label} settings`}>
+                  <ha-icon slot="leading-icon" icon=${options.icon}></ha-icon>
+                  <div class="panel-content">
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${options.data}
+                      .schema=${options.settings}
+                      .computeLabel=${this._computeLabel}
+                      @value-changed=${(event: CustomEvent<{ value: Record<string, unknown> }>) => {
+                        event.stopPropagation();
+                        options.onSettings(event.detail.value);
+                      }}
+                    ></ha-form>
+                  </div>
+                </ha-expansion-panel>
+              `
+            : nothing
+        }
+      </div>
+    `;
+  }
+
+  /** `flow` accepts a bare boolean, so writing to it has to normalise first. */
+  private _updateFlow(patch: Partial<FlowConfig>): void {
+    this._updateConfig({ flow: { ...this._flowConfig, ...patch } });
+  }
+
+  private get _flowConfig(): FlowConfig {
+    const flow = this._config.flow;
+    if (flow === undefined) return { show: true };
+    if (typeof flow === 'boolean') return { show: flow };
+    return { show: true, ...flow };
   }
 
   /**
@@ -334,7 +475,8 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     const unit = this._windUnit;
     const labels: Record<string, string> = {
       title: 'Title',
-      flow: 'Animated wind flow',
+      opacity: 'Opacity',
+      speed: 'Speed',
       latitude: 'Latitude',
       longitude: 'Longitude',
       zoom: 'Zoom',
@@ -350,7 +492,6 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       size: 'Size (px)',
       color_mode: 'Colour mode',
       color: 'Colour (CSS)',
-      hide: 'Hide arrow',
       tiles: 'Basemap',
       interactive: 'Allow pan and zoom',
       attribution: 'Show attribution',
@@ -537,6 +678,12 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     .address-input:focus-visible {
       outline: 2px solid var(--primary-color, #03a9f4);
       outline-offset: -1px;
+    }
+
+    .toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .footprint-row {

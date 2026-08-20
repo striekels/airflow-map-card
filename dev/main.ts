@@ -31,8 +31,8 @@ function config(): AirflowMapCardConfig {
     },
     wind: { entity: 'weather.home' },
     airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
-    arrow: { size: 130 },
-    flow: input('flow').checked,
+    arrow: { show: input('arrow').checked, size: 130 },
+    flow: { show: input('flow').checked },
     map: { interactive: input('interactive').checked },
     rows: [
       { source: 'airflow', size: 'large' },
@@ -72,7 +72,7 @@ function render(): void {
   out('airflow-out').textContent = `bucket=${result.bucket} delta=${result.delta?.toFixed(1)}°`;
 }
 
-for (const id of ['bearing', 'speed', 'facade', 'dark', 'interactive', 'flow']) {
+for (const id of ['bearing', 'speed', 'facade', 'dark', 'interactive', 'flow', 'arrow']) {
   input(id).addEventListener('input', render);
 }
 

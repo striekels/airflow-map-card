@@ -60,8 +60,9 @@
         house: { facade_bearing: 166.9 },
         wind: { entity: 'weather.home' },
         airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
-        arrow: { size: 130, show_gust: true },
+        arrow: { show: false, size: 130 },
         map: { interactive: true },
+        flow: { show: true },
         rows: [
           { source: 'airflow', size: 'large' },
           { source: 'speed', name: 'Wind' },
