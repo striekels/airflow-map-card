@@ -29,13 +29,16 @@ const SECTIONS = [
 /** Everything else, folded away. Real changes, rarely the reason to upgrade. */
 const QUIET = ['refactor', 'docs', 'test', 'build', 'ci', 'chore', 'style'];
 
-function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8' }).trim();
+// `cwd` exists so the tests can point this at a repository they built
+// themselves. Reading the real log would tie them to a full clone with tags,
+// which CI does not make and a history rewrite would invalidate.
+function git(cwd, ...args) {
+  return execFileSync('git', args, { encoding: 'utf8', cwd }).trim();
 }
 
-function previousTag() {
+function previousTag(cwd) {
   try {
-    return git('describe', '--tags', '--abbrev=0', 'HEAD^');
+    return git(cwd, 'describe', '--tags', '--abbrev=0', 'HEAD^');
   } catch {
     return '';
   }
@@ -57,11 +60,9 @@ function line({ sha, scope, subject }) {
   return `- ${where}${subject} ([\`${sha}\`](${REPO}/commit/${sha}))`;
 }
 
-export function releaseNotes(from, to = 'HEAD') {
-  const range = from ? `${from}..${to}` : to;
-  const raw = git('log', range, '--no-merges', '--format=%h%n%s%n%b%x00');
-
-  const commits = raw
+/** Every commit in the range, newest first, minus the release bookkeeping. */
+function commitsIn(range, cwd) {
+  return git(cwd, 'log', range, '--no-merges', '--format=%h%n%s%n%b%x00')
     .split('\0')
     .map((entry) => entry.trim())
     .filter(Boolean)
@@ -69,7 +70,10 @@ export function releaseNotes(from, to = 'HEAD') {
     // The release commit itself is bookkeeping: it bumps three version strings
     // and says so. Nobody reads release notes to learn that a release happened.
     .filter((c) => c && !(c.type === 'chore' && c.scope === 'release'));
+}
 
+export function releaseNotes(from, to = 'HEAD', { cwd } = {}) {
+  const commits = commitsIn(from ? `${from}..${to}` : to, cwd);
   const out = [];
 
   for (const section of SECTIONS) {
@@ -102,18 +106,8 @@ export function releaseNotes(from, to = 'HEAD') {
  * minor, anything else is a patch. Pre-1.0 a breaking change is only a minor,
  * which is what the 0.x contract means.
  */
-export function nextVersion(current, from) {
-  const commits = git(
-    'log',
-    from ? `${from}..HEAD` : 'HEAD',
-    '--no-merges',
-    '--format=%h%n%s%n%b%x00',
-  )
-    .split('\0')
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map(parse)
-    .filter((c) => c && !(c.type === 'chore' && c.scope === 'release'));
+export function nextVersion(current, from, { cwd } = {}) {
+  const commits = commitsIn(from ? `${from}..HEAD` : 'HEAD', cwd);
 
   const [major, minor, patch] = current.split('.').map(Number);
   if (commits.some((c) => c.breaking)) {

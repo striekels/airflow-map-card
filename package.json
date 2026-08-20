@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "build": "npm run typecheck && node scripts/build.mjs",
     "build:analyze": "node scripts/build.mjs --analyze",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/leaflet": "^1.9.16",
+    "@types/node": "^20.19.43",
     "esbuild": "^0.25.12",
     "eslint": "^10.8.1",
     "globals": "^17.11.0",

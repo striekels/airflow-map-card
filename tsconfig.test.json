@@ -1,0 +1,11 @@
+{
+  // The tests build a git repository to read, so they need node's types, and
+  // tsconfig.json deliberately withholds them: the card ships to a browser and
+  // `process` or `Buffer` reaching src should be a compile error, not a
+  // runtime surprise. Two projects keep both true.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "test", "dev"]
+}
