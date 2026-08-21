@@ -1,39 +1,7 @@
 import '../src/airflow-map-card';
 import { mockHass } from './mock-hass';
 import type { AirflowMapCardConfig } from '../src/types';
-
-/**
- * The building every screenshot is taken of: the Rietveld Schroder House in
- * Utrecht.
- *
- * A deliberate choice, not a placeholder. It is a museum rather than anyone's
- * home, so no screenshot of it can leak an address, and it is a real house on
- * a real street, so the outline, the facade angle and the neighbours all look
- * like what a user will actually see. The footprint is the genuine OpenStreetMap
- * way, which is also what the editor's Detect button would return.
- */
-const HOUSE = {
-  latitude: 52.085327,
-  longitude: 5.147578,
-  // Outward normal of the long street-facing wall.
-  facadeBearing: 118.2,
-  footprint: [
-    [52.085307, 5.147492],
-    [52.085386, 5.147561],
-    [52.085376, 5.147589],
-    [52.085379, 5.147592],
-    [52.085375, 5.147602],
-    [52.085374, 5.147601],
-    [52.085354, 5.14766],
-    [52.085297, 5.147607],
-    [52.085295, 5.147613],
-    [52.085293, 5.147611],
-    [52.085297, 5.1476],
-    [52.085277, 5.147582],
-    [52.085294, 5.147535],
-    [52.085292, 5.147533],
-  ] as Array<[number, number]>,
-};
+import { DEMO_HOUSE } from './demo-house';
 
 interface Scene {
   id: string;
@@ -46,6 +14,8 @@ interface Scene {
   flow: boolean;
   /** Pins a basemap. Unset follows the card's own default, which is light. */
   tiles?: 'carto-dark';
+  /** Output filename, when it differs from the id. */
+  file?: string;
 }
 
 /**
@@ -63,21 +33,25 @@ const SCENES: Scene[] = [
   {
     id: 'front-to-back',
     label: 'Front to back',
-    note: 'Wind onto the front wall, flow only.',
+    note: 'The hero shot: arrow, flow and outline together.',
     bearing: 118,
     speed: 24,
     dark: false,
-    arrow: false,
+    arrow: true,
     flow: true,
+    // The README links this one, and has done since before the gallery
+    // existed. Renaming the file would break the image on every fork and in
+    // every copy of the page GitHub has already rendered.
+    file: 'card',
   },
   {
     id: 'sideways',
     label: 'Sideways',
-    note: 'Across the house, arrow and flow together.',
+    note: 'Flow on its own, with the arrow turned off.',
     bearing: 208,
     speed: 19,
     dark: false,
-    arrow: true,
+    arrow: false,
     flow: true,
   },
   {
@@ -109,13 +83,15 @@ const SCENES: Scene[] = [
 // The capture script reads the list from here rather than repeating it. Two
 // copies would drift, and the failure is a screenshot that silently stops
 // being regenerated.
-(window as unknown as { scenes?: string[] }).scenes = SCENES.map((s) => s.id);
+(window as unknown as { scenes?: Array<{ id: string; file: string }> }).scenes = SCENES.map(
+  (s) => ({ id: s.id, file: s.file ?? s.id }),
+);
 
 function config(scene: Scene): AirflowMapCardConfig {
   return {
     type: 'custom:airflow-map-card',
-    location: { latitude: HOUSE.latitude, longitude: HOUSE.longitude, zoom: 18 },
-    house: { facade_bearing: HOUSE.facadeBearing, footprint: HOUSE.footprint },
+    location: { latitude: DEMO_HOUSE.latitude, longitude: DEMO_HOUSE.longitude, zoom: DEMO_HOUSE.zoom },
+    house: { facade_bearing: DEMO_HOUSE.facadeBearing, footprint: DEMO_HOUSE.footprint },
     wind: { entity: 'weather.home' },
     arrow: { show: scene.arrow, size: ARROW_SIZE },
     flow: { show: scene.flow },

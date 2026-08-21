@@ -31,16 +31,28 @@ const WIDTH = 460;
  */
 const SCALE = 2;
 
-/** Every tile drawn, or the basemap photographs half grey. */
-async function tilesLoaded(page) {
+/**
+ * Every tile drawn, or the basemap photographs half grey.
+ *
+ * The tiles live inside the card's shadow root, and inside the picker's on the
+ * editor page, so this walks in rather than querying the document.
+ */
+async function tilesLoaded(page, host) {
   await page.waitForFunction(
-    () => {
-      const card = document.querySelector('airflow-map-card');
-      const tiles = card?.shadowRoot?.querySelectorAll('img.leaflet-tile');
-      if (!tiles || tiles.length === 0) return false;
-      return [...tiles].every((img) => img.complete && img.naturalWidth > 0);
+    (selector) => {
+      const roots = [...document.querySelectorAll(selector)]
+        .map((element) => element.shadowRoot)
+        .filter(Boolean);
+      const tiles = roots.flatMap((root) => [
+        ...root.querySelectorAll('img.leaflet-tile'),
+        ...[...root.querySelectorAll('*')]
+          .filter((child) => child.shadowRoot)
+          .flatMap((child) => [...child.shadowRoot.querySelectorAll('img.leaflet-tile')]),
+      ]);
+      if (tiles.length === 0) return false;
+      return tiles.every((img) => img.complete && img.naturalWidth > 0);
     },
-    undefined,
+    host,
     { timeout: 20000 },
   );
 }
@@ -65,24 +77,38 @@ async function main() {
 
   await page.goto(`${base}/demo.html`);
   const scenes = await page.evaluate(() => window.scenes ?? []);
-  const wanted = only ? scenes.filter((id) => id === only) : scenes;
+  const wanted = only ? scenes.filter((scene) => scene.id === only) : scenes;
 
   if (wanted.length === 0) {
-    throw new Error(`No scene called "${only}". Try one of: ${scenes.join(', ')}`);
+    throw new Error(`No scene called "${only}". Try one of: ${scenes.map((s) => s.id).join(', ')}`);
   }
 
   mkdirSync(OUT, { recursive: true });
 
-  for (const id of wanted) {
-    await page.goto(`${base}/demo.html?solo=${id}&width=${WIDTH}`);
-    await tilesLoaded(page);
+  for (const scene of wanted) {
+    await page.goto(`${base}/demo.html?solo=${scene.id}&width=${WIDTH}`);
+    await tilesLoaded(page, 'airflow-map-card');
     // Let the particles lay down trails. Freshly seeded they are dots, which
     // photographs as noise over the map rather than as wind.
     await page.waitForTimeout(1500);
 
-    const file = join(OUT, `${id}.png`);
-    await page.locator('.card-frame').screenshot({ path: file });
-    console.info(`  ${id.padEnd(14)} -> images/${id}.png`);
+    await page.locator('.card-frame').screenshot({ path: join(OUT, `${scene.file}.png`) });
+    console.info(`  ${scene.id.padEnd(14)} -> images/${scene.file}.png`);
+  }
+
+  // The editor, captured down to the Where panel: the address search, the map
+  // with the alignment guide over the house, and Detect. The rest of the editor
+  // is a stack of collapsed headers, which photographs as a stack of collapsed
+  // headers.
+  if (!only) {
+    await page.goto(`${base}/editor.html?bare`);
+    await tilesLoaded(page, 'airflow-map-card-editor');
+    await page.waitForTimeout(800);
+    await page
+      .locator('ha-expansion-panel')
+      .first()
+      .screenshot({ path: join(OUT, 'editor.png') });
+    console.info(`  ${'editor'.padEnd(14)} -> images/editor.png`);
   }
 
   await browser.close();

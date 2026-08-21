@@ -32,6 +32,15 @@
         border-radius: 12px;
         padding: 16px;
       }
+      html.bare body {
+        padding: 0;
+        background: #f2f4f6;
+      }
+
+      html.bare pre {
+        display: none;
+      }
+
       pre {
         flex: 1;
         background: #1e1e1e;
@@ -48,16 +57,27 @@
   <body>
     <div class="panel"><div id="host"></div></div>
     <pre id="out"></pre>
+    <script>
+      // ?bare hides the YAML pane and the page padding, for capture.
+      if (new URLSearchParams(location.search).has('bare')) {
+        document.documentElement.classList.add('bare');
+      }
+    </script>
 
     <script type="module">
       import './ha-stubs.ts';
       import '../src/editor.ts';
+      import { DEMO_HOUSE } from './demo-house.ts';
 
       const config = {
         type: 'custom:airflow-map-card',
         title: 'Airflow',
-        location: { latitude: 51.2194, longitude: 4.4025, zoom: 18 },
-        house: { facade_bearing: 166.9 },
+        location: {
+          latitude: DEMO_HOUSE.latitude,
+          longitude: DEMO_HOUSE.longitude,
+          zoom: DEMO_HOUSE.zoom,
+        },
+        house: { facade_bearing: DEMO_HOUSE.facadeBearing, footprint: DEMO_HOUSE.footprint },
         wind: { entity: 'weather.home' },
         airflow: { mode: 'compute', weak_below: 5, sideways_from: 45 },
         arrow: { show: false, size: 130 },
@@ -72,7 +92,7 @@
 
       const editor = document.createElement('airflow-map-card-editor');
       editor.hass = {
-        config: { latitude: 51.2194, longitude: 4.4025 },
+        config: { latitude: DEMO_HOUSE.latitude, longitude: DEMO_HOUSE.longitude },
         themes: { darkMode: false },
         states: {},
         locale: { language: 'en' },

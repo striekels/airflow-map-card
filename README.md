@@ -11,7 +11,7 @@ animates the wind blowing across it, and tells you plainly whether that air will
 back, back to front, or just wash past the front door doing nothing for you.
 
 <p align="center">
-  <img src="images/card.png" alt="The card on a dashboard: a wind arrow over a mapped house, with the verdict Back to Front underneath" width="420">
+  <img src="images/card.png" alt="The card on a dashboard: a wind arrow over a mapped house, with the verdict Front to Back underneath" width="420">
 </p>
 
 The card works out which way your house faces by reading its outline from OpenStreetMap, so
@@ -474,9 +474,13 @@ npm run screenshots sideways      # just one
 ```
 
 It starts the dev server itself, waits for every tile to finish loading and for the particles
-to lay down trails, and captures the card element at 2x for a display that deserves it. No
-cropping step, so the OpenStreetMap credit cannot be clipped, which the tile licence requires
-stays visible.
+to lay down trails, and captures at 2x for a display that deserves it. No cropping step, so
+the OpenStreetMap credit cannot be clipped, which the tile licence requires stays visible.
+
+It writes `card.png`, the two used above, plus `sideways.png`, `back-to-front.png` and
+`weak.png`. `editor.png` comes from the editor harness, which is pointed at the same house,
+and is captured down to the **Where** panel: the rest of the editor photographs as a stack of
+collapsed headers.
 
 Append `?solo=<id>` to look at one in the browser, with the ids being `front-to-back`,
 `sideways`, `back-to-front` and `weak`.
