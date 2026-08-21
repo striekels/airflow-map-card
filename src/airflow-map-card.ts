@@ -27,6 +27,7 @@ import { TemplateSubscriber } from './data/templates';
 import { handleAction } from './data/actions';
 import { strings } from './localize';
 import './editor';
+import { resolveFlow } from './data/flow';
 
 const DEFAULT_ROWS: RowConfig[] = [
   { source: 'airflow', size: 'large' },
@@ -54,18 +55,9 @@ export class AirflowMapCard extends LitElement {
   private _continuousRotation = 0;
   private _lastBearing: number | null = null;
 
-  /**
-   * The flow settings, with `flow: true` accepted as shorthand.
-   *
-   * On by default. The flow shows direction and speed at once, which is the
-   * question the card exists to answer; the arrow says direction more precisely
-   * and is opt-in beside it.
-   */
-  private get _flowConfig(): FlowConfig {
-    const flow = this._config.flow;
-    if (flow === undefined) return { show: true };
-    if (typeof flow === 'boolean') return { show: flow };
-    return { show: true, ...flow };
+  /** The flow settings, with every default filled in. */
+  private get _flowConfig(): Required<FlowConfig> {
+    return resolveFlow(this._config.flow);
   }
 
   static getConfigElement(): HTMLElement {
@@ -425,8 +417,8 @@ export class AirflowMapCard extends LitElement {
       speed: wind.speed,
       unit: wind.speedUnit,
       color: this._arrowColor(airflow),
-      opacity: BUCKET_OPACITY[airflow.bucket] * (flow.opacity ?? 1),
-      pace: flow.speed ?? 1,
+      opacity: BUCKET_OPACITY[airflow.bucket] * flow.opacity,
+      pace: flow.speed,
     });
   }
 

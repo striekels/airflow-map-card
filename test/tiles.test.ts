@@ -4,18 +4,17 @@ import { TILE_PRESETS, resolveTiles } from '../src/map/tiles';
 const host = (url: string) => url.replace('https://', '').split('/')[0];
 
 describe('resolveTiles', () => {
-  it('follows the dashboard when nothing is pinned', () => {
-    expect(host(resolveTiles({}, true).url)).toBe('{s}.basemaps.cartocdn.com');
+  it('gives an unset basemap OpenStreetMap light, whatever the dashboard theme', () => {
+    expect(host(resolveTiles({}, true).url)).toBe('tile.openstreetmap.org');
     expect(host(resolveTiles({}, false).url)).toBe('tile.openstreetmap.org');
   });
 
-  it('treats auto exactly like unset', () => {
-    // The whole point of the auto value: it is the way back out of a pinned
-    // basemap. Without it, choosing a preset in the editor permanently
-    // overrode the theme and there was no option to undo it.
-    for (const dark of [true, false]) {
-      expect(resolveTiles({ tiles: 'auto' }, dark)).toEqual(resolveTiles({}, dark));
-    }
+  it('follows the theme only when auto is asked for', () => {
+    // auto is still the way back out of a pinned basemap; it is no longer what
+    // you get by saying nothing.
+    expect(host(resolveTiles({ tiles: 'auto' }, true).url)).toBe('{s}.basemaps.cartocdn.com');
+    expect(host(resolveTiles({ tiles: 'auto' }, false).url)).toBe('tile.openstreetmap.org');
+    expect(resolveTiles({ tiles: 'auto' }, true)).not.toEqual(resolveTiles({}, true));
   });
 
   it('has no theme option, which was a second control over one outcome', () => {
@@ -72,7 +71,7 @@ describe('resolveTiles', () => {
   });
 
   it('follows the dashboard only when the basemap is automatic', () => {
-    expect(resolveTiles({}, true).dark).toBe(true);
+    expect(resolveTiles({}, true).dark).toBe(false);
     expect(resolveTiles({}, false).dark).toBe(false);
     expect(resolveTiles({ tiles: 'auto' }, true).dark).toBe(true);
   });

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeAirflow, type AirflowInput } from '../src/data/airflow';
+import {
+  DEFAULT_SIDEWAYS_FROM,
+  DEFAULT_WEAK_BELOW,
+  computeAirflow,
+  type AirflowInput,
+} from '../src/data/airflow';
 
 const base: AirflowInput = {
   windFrom: 0,
@@ -8,6 +13,15 @@ const base: AirflowInput = {
   weakBelow: 5,
   sidewaysFrom: 45,
 };
+
+describe('defaults', () => {
+  it('classifies sideways as the narrow band, not the wide one', () => {
+    // The tests below pin their own threshold, so the shipped default needs
+    // asserting somewhere or it can be changed without a single test noticing.
+    expect(DEFAULT_SIDEWAYS_FROM).toBe(75);
+    expect(DEFAULT_WEAK_BELOW).toBe(5);
+  });
+});
 
 describe('computeAirflow', () => {
   it('calls wind arriving from the direction the facade faces front-to-back', () => {

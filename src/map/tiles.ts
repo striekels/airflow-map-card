@@ -21,6 +21,9 @@ export interface TileSpec {
 const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 const CARTO_ATTRIBUTION = `${OSM_ATTRIBUTION} © CARTO`;
 
+/** The basemap a card gets when it does not ask for one. */
+export const DEFAULT_TILES: Exclude<TilePreset, 'custom' | 'auto'> = 'osm';
+
 export const TILE_PRESETS: Record<Exclude<TilePreset, 'custom' | 'auto'>, TileSpec> = {
   osm: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -71,8 +74,13 @@ export function resolveTiles(config: MapConfig = {}, darkMode: boolean): TileSpe
     };
   } else if (pinned) {
     spec = TILE_PRESETS[config.tiles as Exclude<TilePreset, 'custom' | 'auto'>];
-  } else {
+  } else if (config.tiles === 'auto') {
     spec = darkMode ? TILE_PRESETS['carto-dark'] : TILE_PRESETS.osm;
+  } else {
+    // Unset is OpenStreetMap light rather than theme-following. Following the
+    // theme swapped the map out from under a card whose colours were chosen
+    // against one basemap, and the outline and flow are tuned for the light one.
+    spec = TILE_PRESETS[DEFAULT_TILES];
   }
 
   return config.filter ? { ...spec, filter: config.filter } : spec;

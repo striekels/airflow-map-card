@@ -15,7 +15,7 @@ import type {
 import { fireEvent } from './data/actions';
 import { resolveWind } from './data/wind-source';
 import { geocode, GeocodeError } from './data/geocode';
-import { DEFAULT_SIDEWAYS_FROM } from './data/airflow';
+import { DEFAULT_SIDEWAYS_FROM, DEFAULT_WEAK_BELOW } from './data/airflow';
 import {
   EXACT_HOUSE_SCHEMA,
   EXACT_LOCATION_SCHEMA,
@@ -29,6 +29,8 @@ import {
   type RowKind,
 } from './editor/schema';
 import './editor/facade-picker';
+import { resolveFlow } from './data/flow';
+import { DEFAULT_TILES } from './map/tiles';
 
 @customElement(EDITOR_TYPE)
 export class AirflowMapCardEditor extends LitElement implements LovelaceCardEditor {
@@ -236,7 +238,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             <div class="panel-content">
               <ha-form
                 .hass=${this.hass}
-                .data=${this._config.map ?? {}}
+                .data=${{ tiles: DEFAULT_TILES, ...(this._config.map ?? {}) }}
                 .schema=${mapSchema(this._config.map)}
                 .computeLabel=${this._computeLabel}
                 @value-changed=${(event: CustomEvent<{ value: MapConfig }>) => {
@@ -304,11 +306,8 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     this._updateConfig({ flow: { ...this._flowConfig, ...patch } });
   }
 
-  private get _flowConfig(): FlowConfig {
-    const flow = this._config.flow;
-    if (flow === undefined) return { show: true };
-    if (typeof flow === 'boolean') return { show: flow };
-    return { show: true, ...flow };
+  private get _flowConfig(): Required<FlowConfig> {
+    return resolveFlow(this._config.flow);
   }
 
   /**
@@ -458,9 +457,23 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
 
   // ------------------------------------------------------------------- form
 
+  /**
+   * The config with the airflow defaults filled in. Left blank, a number box
+   * reads as unset and a slider sits at its minimum, both of which look like a
+   * choice somebody made rather than a default.
+   */
   private get _formData(): Record<string, unknown> {
     const { rows: _rows, ...rest } = this._config;
-    return rest;
+    const airflow = rest.airflow ?? {};
+    return {
+      ...rest,
+      airflow: {
+        mode: airflow.mode ?? 'compute',
+        weak_below: airflow.weak_below ?? DEFAULT_WEAK_BELOW,
+        sideways_from: airflow.sideways_from ?? DEFAULT_SIDEWAYS_FROM,
+        ...(airflow.entity ? { entity: airflow.entity } : {}),
+      },
+    };
   }
 
   private _formChanged(event: CustomEvent<{ value: AirflowMapCardConfig }>): void {

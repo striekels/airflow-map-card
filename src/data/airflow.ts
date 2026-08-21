@@ -22,7 +22,7 @@ export interface AirflowResult {
 }
 
 export const DEFAULT_WEAK_BELOW = 5;
-export const DEFAULT_SIDEWAYS_FROM = 45;
+export const DEFAULT_SIDEWAYS_FROM = 75;
 
 /**
  * Classify how the wind moves through the house.

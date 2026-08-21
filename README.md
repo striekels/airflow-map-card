@@ -129,7 +129,7 @@ everything the way the air actually travels, which is the reciprocal.
 
 | Angle between the wind's origin and the facade | Result           |
 | ---------------------------------------------- | ---------------- |
-| less than `sideways_from` (default 45°)        | **Front → Back** |
+| less than `sideways_from` (default 75°)        | **Front → Back** |
 | more than `180 - sideways_from`                | **Back → Front** |
 | anything in between                            | **Sideways**     |
 | speed below `weak_below`                       | **Weak wind**    |
@@ -270,7 +270,7 @@ no data rather than silently falling back.
 | `mode`          | `compute` \| `entity` \| `off` | `compute`               |                                                                                  |
 | `entity`        | entity                         | -                       | Label source when `mode: entity`.                                                |
 | `weak_below`    | number                         | `5`                     | In the wind source's unit.                                                       |
-| `sideways_from` | number                         | `45`                    | Degrees, 1–90.                                                                   |
+| `sideways_from` | number                         | `75`                    | Degrees, 1–90.                                                                   |
 | `labels`        | map                            | English/Dutch built-ins | Override any of `front_to_back`, `back_to_front`, `sideways`, `weak`, `unknown`. |
 
 ### `arrow`
@@ -292,7 +292,7 @@ On by default.
 | Option    | Type    | Default | Description                                     |
 | --------- | ------- | ------- | ----------------------------------------------- |
 | `show`    | boolean | `true`  | Turn the animation off if it distracts you.     |
-| `opacity` | number  | `1`     | 0.1 to 1, scaling how strongly it is drawn.     |
+| `opacity` | number  | `0.5`   | 0.1 to 1, scaling how strongly it is drawn.     |
 | `speed`   | number  | `1`     | 0.25 to 3, multiplying how fast particles move. |
 
 `flow: true` is still accepted as shorthand for `flow: { show: true }`.
@@ -301,7 +301,7 @@ On by default.
 
 | Option         | Type                                             | Default     | Description                                                                                          |
 | -------------- | ------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------- |
-| `tiles`        | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `auto`      | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
+| `tiles`        | `auto` \| `osm` \| `carto-light` \| `carto-dark` | `osm`       | `auto` follows the dashboard's light/dark theme. Anything else pins the basemap regardless of theme. |
 | `tile_url`     | string                                           | -           | Your own tile server. Overrides `tiles`.                                                             |
 | `attribution`  | boolean                                          | `true`      |                                                                                                      |
 | `interactive`  | boolean                                          | `false`     | Allow pan and zoom.                                                                                  |
@@ -317,8 +317,8 @@ way to see what the wind is doing without reading a single number.
 ```yaml
 flow:
   show: true
-  opacity: 0.8
-  speed: 1.5
+  opacity: 0.5
+  speed: 1
 ```
 
 **It is a uniform flow, not a wind field.** Windy and similar maps advect particles through a
@@ -366,6 +366,16 @@ Shared options: `name` (or `false` to hide), `icon` (or `false`), `prefix`, `suf
 A `large` row takes the full width on its own line; `normal` and `small` rows share a line.
 
 ## Upgrading
+
+### Unreleased
+
+Several defaults changed, which affects any card that did not set them:
+
+- **The basemap no longer follows the dashboard theme.** Unset now means
+  OpenStreetMap light. Set `map: { tiles: auto }` to get the old behaviour back.
+- **`airflow.sideways_from` is 75, was 45.** Sideways is now the narrow band, so more wind
+  directions read as front-to-back or back-to-front.
+- **`flow.opacity` is 0.5, was 1.** The map stays readable underneath.
 
 ### 1.x to 2.0
 
