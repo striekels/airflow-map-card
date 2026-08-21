@@ -44,7 +44,15 @@ interface Scene {
   dark: boolean;
   arrow: boolean;
   flow: boolean;
+  /** Pins a basemap. Unset follows the card's own default, which is light. */
+  tiles?: 'carto-dark';
 }
+
+/**
+ * Smaller than the shipped default of 130. At full size the arrow covers the
+ * house outline completely, so a screenshot meant to show both showed one.
+ */
+const ARROW_SIZE = 88;
 
 /**
  * One scene per thing worth showing. Wind directions are chosen against the
@@ -75,12 +83,16 @@ const SCENES: Scene[] = [
   {
     id: 'back-to-front',
     label: 'Back to front',
-    note: 'Dark dashboard, arrow only.',
+    note: 'Dark dashboard on a dark basemap, arrow only.',
     bearing: 298,
     speed: 31,
     dark: true,
     arrow: true,
     flow: false,
+    // Pinned, because the card's default basemap is light whatever the
+    // dashboard theme. A dark card around a light map reads as a bug in a
+    // screenshot even though it is the documented default.
+    tiles: 'carto-dark',
   },
   {
     id: 'weak',
@@ -94,15 +106,20 @@ const SCENES: Scene[] = [
   },
 ];
 
+// The capture script reads the list from here rather than repeating it. Two
+// copies would drift, and the failure is a screenshot that silently stops
+// being regenerated.
+(window as unknown as { scenes?: string[] }).scenes = SCENES.map((s) => s.id);
+
 function config(scene: Scene): AirflowMapCardConfig {
   return {
     type: 'custom:airflow-map-card',
     location: { latitude: HOUSE.latitude, longitude: HOUSE.longitude, zoom: 18 },
     house: { facade_bearing: HOUSE.facadeBearing, footprint: HOUSE.footprint },
     wind: { entity: 'weather.home' },
-    arrow: { show: scene.arrow, size: 130 },
+    arrow: { show: scene.arrow, size: ARROW_SIZE },
     flow: { show: scene.flow },
-    map: { interactive: false },
+    map: { interactive: false, ...(scene.tiles ? { tiles: scene.tiles } : {}) },
     rows: [
       { source: 'airflow', size: 'large' },
       { source: 'speed', name: 'Wind' },

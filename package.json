@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write \"{src,test,dev}/**/*.{ts,html,css}\"",
+    "screenshots": "node scripts/screenshots.mjs",
     "release:notes": "node scripts/release-notes.mjs",
     "release:next": "node -e \"import('./scripts/release-notes.mjs').then(m=>console.log(m.nextVersion(require('./package.json').version)))\""
   },
@@ -28,6 +29,7 @@
     "esbuild": "^0.25.12",
     "eslint": "^10.8.1",
     "globals": "^17.11.0",
+    "playwright": "^1.62.1",
     "prettier": "^3.5.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.67.0",

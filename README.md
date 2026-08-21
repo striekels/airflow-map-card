@@ -464,19 +464,26 @@ genuine OpenStreetMap footprint: a museum rather than anyone's home, so a screen
 leak an address, and still a real house on a real street, so the outline, the facade angle
 and the neighbours all look like what a user will actually see.
 
-Append `?solo=<id>` for one card alone on a bare page, sized for capture, with the ids being
-`front-to-back`, `sideways`, `back-to-front` and `weak`. `&width=460` sets the card width.
+Capturing is a script, not a manual step. A screenshot is a build artifact like any other:
+the card changes and the picture in the README quietly stops being true.
+
+```bash
+npx playwright install chromium   # once
+npm run screenshots               # all four, into images/
+npm run screenshots sideways      # just one
+```
+
+It starts the dev server itself, waits for every tile to finish loading and for the particles
+to lay down trails, and captures the card element at 2x for a display that deserves it. No
+cropping step, so the OpenStreetMap credit cannot be clipped, which the tile licence requires
+stays visible.
+
+Append `?solo=<id>` to look at one in the browser, with the ids being `front-to-back`,
+`sideways`, `back-to-front` and `weak`.
 
 ```
 http://localhost:5173/demo.html?solo=sideways&width=460
 ```
-
-Capture the region rather than cropping the gallery: cropping is how a stray shadow ends up
-down one edge, or how the OpenStreetMap credit gets cut off, which the tile licence requires
-stays visible.
-
-Give the tiles a second to finish loading before capturing. A half-drawn basemap is the most
-common way one of these comes out looking broken.
 
 ### Conventions worth knowing
 
