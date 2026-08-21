@@ -436,7 +436,7 @@ npm install
 npm run dev
 ```
 
-Three harnesses run against a mock `hass` object, with no Home Assistant instance needed:
+Four harnesses run against a mock `hass` object, with no Home Assistant instance needed:
 
 - `http://localhost:5173`: the card, with sliders for wind bearing, speed and facade
   orientation, and a toggle for the animated flow.
@@ -444,6 +444,8 @@ Three harnesses run against a mock `hass` object, with no Home Assistant instanc
   OpenStreetMap detection.
 - `http://localhost:5173/editor.html`: the whole visual editor, with the resulting YAML
   beside it. The Home Assistant frontend elements it needs are stubbed in `dev/ha-stubs.ts`.
+- `http://localhost:5173/demo.html`: the screenshot gallery. See
+  [Screenshots](#screenshots).
 
 ```bash
 npm test          # compass maths, airflow, rows, footprint geometry, editor schemas
@@ -453,6 +455,28 @@ npm run build     # produces dist/airflow-map-card.js
 
 The build uses esbuild directly rather than Vite's library mode, which does not minify here;
 see `scripts/build.mjs`. Vite is used only for the dev server.
+
+### Screenshots
+
+`demo.html` renders the card in each state worth showing, so no screenshot has to come from
+a real dashboard. Every one is of the **Rietveld Schroder House** in Utrecht, using its
+genuine OpenStreetMap footprint: a museum rather than anyone's home, so a screenshot cannot
+leak an address, and still a real house on a real street, so the outline, the facade angle
+and the neighbours all look like what a user will actually see.
+
+Append `?solo=<id>` for one card alone on a bare page, sized for capture, with the ids being
+`front-to-back`, `sideways`, `back-to-front` and `weak`. `&width=460` sets the card width.
+
+```
+http://localhost:5173/demo.html?solo=sideways&width=460
+```
+
+Capture the region rather than cropping the gallery: cropping is how a stray shadow ends up
+down one edge, or how the OpenStreetMap credit gets cut off, which the tile licence requires
+stays visible.
+
+Give the tiles a second to finish loading before capturing. A half-drawn basemap is the most
+common way one of these comes out looking broken.
 
 ### Conventions worth knowing
 

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>airflow-map-card screenshot gallery</title>
+    <style>
+      :root {
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --secondary-background-color: #e5e5e5;
+        --divider-color: rgba(0, 0, 0, 0.12);
+        --ha-card-background: #fff;
+        --ha-card-border-radius: 12px;
+        --error-color: #db4437;
+        --warning-color: #ffa726;
+        --state-icon-color: #44739e;
+        color-scheme: light;
+      }
+
+      .dark {
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b;
+        --secondary-background-color: #202124;
+        --divider-color: rgba(255, 255, 255, 0.12);
+        --ha-card-background: #1c1c1c;
+        color-scheme: dark;
+      }
+
+      body {
+        font-family: Roboto, system-ui, sans-serif;
+        margin: 0;
+        padding: 32px;
+        /* Home Assistant's own light dashboard grey, so the card sits on the
+           background it will really sit on rather than on pure white. */
+        background: #f2f4f6;
+        color: var(--primary-text-color);
+      }
+
+      /* Stand-in for HA's own <ha-card>, which is not available here. */
+      ha-card {
+        display: block;
+        background: var(--ha-card-background);
+        border-radius: var(--ha-card-border-radius);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      }
+
+      #demo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        align-items: flex-start;
+      }
+
+      .scene {
+        margin: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .scene.dark .card-frame {
+        background: #111418;
+        margin: -16px;
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      figcaption {
+        display: grid;
+        gap: 2px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        max-width: 420px;
+      }
+
+      figcaption strong {
+        color: #212121;
+        font-size: 14px;
+      }
+
+      figcaption a {
+        color: #03a9f4;
+        font-size: 12px;
+        justify-self: start;
+      }
+
+      /* Solo mode: nothing on the page but the card, so a window capture needs
+         no cropping and cannot clip the tile attribution. */
+      body.solo {
+        padding: 0;
+        background: #f2f4f6;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      body.solo.dark {
+        background: #111418;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="demo"></div>
+    <script type="module" src="./demo.ts"></script>
+  </body>
+</html>
