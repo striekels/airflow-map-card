@@ -14,110 +14,53 @@ back, back to front, or just wash past the front door doing nothing for you.
   <img src="images/card.png" alt="The card on a dashboard: a wind arrow over a mapped house, with the verdict Front to Back underneath" width="420">
 </p>
 
-The card works out which way your house faces by reading its outline from OpenStreetMap, so
-you are not squinting at a compass in the garden. Press one button and it finds the building,
-picks the wall facing the street, and sets the angle for you.
+It works out which way your house faces by reading its outline from OpenStreetMap, so you are
+not squinting at a compass in the garden. Press one button and it finds the building, picks
+the wall facing the street, and sets the angle for you.
 
-## Stability
-
-The configuration format is the contract. From 1.0 it changes only with a major version, and
-never silently: an option that stops working is removed and named in the
-[release notes](https://github.com/striekels/airflow-map-card/releases) rather than left in
-place doing nothing.
-
-The card has been exercised against a small number of Home Assistant instances and weather
-integrations, so bug reports are genuinely useful, particularly if your integration reports
-wind in a unit or a bearing convention that produces a plausible but wrong answer. Include
-your Home Assistant version, the card version from the browser console, and your YAML.
-
-## Contents
-
-- [What it does](#what-it-does)
-- [Requirements](#requirements)
-- [Install](#install)
-- [Quick start](#quick-start)
-- [How the direction works](#how-the-direction-works)
-- [Options](#options)
-- [Speed units](#speed-units)
-- [Colour](#colour)
-- [Upgrading](#upgrading)
-- [Attribution and fair use](#attribution-and-fair-use)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Status](#status)
-
-## What it does
-
-- **A live map of your actual house**, from OpenStreetMap or CARTO tiles, following your
-  dashboard's light or dark theme. No screenshotting a map and cropping it by hand.
-- **Wind arrow** driven by any `weather` entity, pointing the way the air actually travels.
-- **Airflow verdict** (front to back, back to front, sideways, or too weak to matter),
-  computed from the wind bearing and the way your house faces.
-- **One-click facade alignment**: the editor reads your building's outline from
-  OpenStreetMap, works out which wall faces the street, and sets the angle for you. Click a
-  neighbouring house if it guessed wrong.
-- **Wind you can watch**: particles stream across the map, faster and denser when it blows
-  harder, so speed is something you see rather than a number you read.
-- **Configurable readouts** underneath: built-in values, any entity or attribute, or Jinja
-  templates.
+Particles stream across the map, faster and denser when it blows harder, so speed is
+something you see rather than a number you read. Underneath, configurable rows show built-in
+values, any entity or attribute, or Jinja templates.
 
 ## Requirements
 
 - Home Assistant **2024.11** or newer (the card uses the sections-layout grid API).
-- A `weather` entity that reports `wind_bearing` and `wind_speed`, or sensors that do.
+- A `weather` entity reporting `wind_bearing` and `wind_speed`, or sensors that do.
 - Browser access to a tile server. The defaults are the public OpenStreetMap and CARTO
-  endpoints; see [Attribution and fair use](#attribution-and-fair-use).
+  endpoints; see [Attribution](#attribution-and-fair-use).
 
 ## Install
 
-### HACS (custom repository)
+**HACS:** ⋮ → **Custom repositories** → add this repository with category **Dashboard**
+(older HACS calls it **Lovelace** or **Plugin**) → install → hard-refresh your browser with
+Ctrl+Shift+R. A normal reload will not pick up a newly registered resource.
 
-1. HACS → ⋮ → **Custom repositories**
-2. Add this repository's URL with category **Dashboard** (older HACS calls it
-   **Lovelace** or **Plugin**)
-3. Install **Airflow Map Card**
-4. Hard-refresh your browser (Ctrl+Shift+R). A normal reload will not pick up a newly
-   registered resource.
-
-### Manual
-
-Download `airflow-map-card.js` from the latest release into `config/www/`, then add it under
-Settings → Dashboards → ⋮ → **Resources** as a **JavaScript module**:
+**Manual:** download `airflow-map-card.js` from the
+[latest release](https://github.com/striekels/airflow-map-card/releases) into `config/www/`,
+then add it under Settings → Dashboards → ⋮ → **Resources** as a **JavaScript module**:
 
 ```
-/local/airflow-map-card.js
+/local/airflow-map-card.js?v=3.0.0
 ```
 
-If you are updating a manually installed copy, append a version query so the browser cannot
-serve you a cached build: `/local/airflow-map-card.js?v=1.1.0`.
+The version query stops the browser serving a cached build when you update.
 
 ## Quick start
 
-Add the card from the dashboard card picker and it already works: your Home Assistant home
-coordinates, the first `weather.*` entity it finds, and three sensible rows. Everything below
-is optional fiddling, all of it available in the visual editor if you would rather not write
-YAML.
+Add the card from the picker and it already works: your Home Assistant home coordinates, the
+first `weather.*` entity it finds, and three sensible rows. Everything below is optional, and
+all of it is in the visual editor if you would rather not write YAML.
 
 ```yaml
 type: custom:airflow-map-card
-title: Airflow
-location:
-  latitude: 51.2194
-  longitude: 4.4025
-  zoom: 18
-house:
-  facade_bearing: 45
-wind:
-  entity: weather.home
+location: { latitude: 51.2194, longitude: 4.4025, zoom: 18 }
+house: { facade_bearing: 45 }
+wind: { entity: weather.home }
 rows:
   - source: airflow
     size: large
   - source: speed
     name: Wind
-  - source: bearing
-    prefix: from
-    name: false
 ```
 
 ## How the direction works
@@ -127,7 +70,7 @@ meteorological convention and a reliable source of off-by-180 mistakes. The card
 everything the way the air actually travels, which is the reciprocal.
 
 `house.facade_bearing` is the direction the **front of your house faces**: `0` = north,
-`90` = east. With that, the card classifies the flow:
+`90` = east. With that:
 
 | Angle between the wind's origin and the facade | Result           |
 | ---------------------------------------------- | ---------------- |
@@ -136,25 +79,47 @@ everything the way the air actually travels, which is the reciprocal.
 | anything in between                            | **Sideways**     |
 | speed below `weak_below`                       | **Weak wind**    |
 
-If you already have a template sensor doing this, keep it: set `airflow.mode: entity` and
-point `airflow.entity` at it. The card still colours the arrow from its own calculation.
+Already have a template sensor doing this? Set `airflow.mode: entity` and point
+`airflow.entity` at it. The card still colours the arrow from its own calculation.
 
-> **Units:** `airflow.weak_below` is read in whatever unit the card is **displaying**, which
-> by default is whatever your wind source reports. Set [`wind.speed_unit`](#speed-units) and
-> the threshold follows it, so the number in the field is the number on the card. The visual
-> editor shows the unit in the field label either way.
+## Aligning the facade
+
+<p align="center">
+  <img src="images/editor.png" alt="The editor's Where section: address search, a map with the alignment guide, and the Detect button" width="380">
+</p>
+
+Open the card editor, find **Where**, pan the map to your house and press **Detect from
+OpenStreetMap**. Detection runs at whatever the map is centred on, so panning is how you tell
+it where to look. It picks the building under the centre, faces the wall pointing at the
+street, moves the card's position onto that building, and stores the outline so the card can
+draw it under the arrow.
+
+**If it picked the wrong building, click yours on the map** and detection re-runs against it.
+If your building is not mapped, or the wrong _wall_ was chosen, drag the guide line onto the
+front of the house instead; it snaps to a wall within 8°, and arrow keys (1°, or 5° with
+Shift) and the rotate buttons (0.1°) take it from there.
+
+The guide's two shaded sectors show where wind blows through the house rather than across it,
+so `sideways_from` is visible rather than abstract. The **eye button** hides the guide while
+you pan. All of it is editor-only, and every lookup happens on a button press: nothing is
+queried while the card runs.
+
+Anything that moves the card without detecting again, an address search, **Use home**, or
+typed coordinates, clears the stored outline, because it belongs to one building.
 
 ## Options
 
 ### Top level
 
-| Option        | Type   | Default                 | Description                                                   |
-| ------------- | ------ | ----------------------- | ------------------------------------------------------------- |
-| `title`       | string | -                       | Card header. Omit for no header.                              |
-| `flow`        | object | on                      | Animated wind flow over the map. See [Wind flow](#wind-flow). |
-| `rows`        | list   | airflow, speed, bearing | Info rows. See [Rows](#rows).                                 |
-| `tap_action`  | action | -                       | Standard Lovelace action, fired by tapping the arrow.         |
-| `hold_action` | action | -                       | The same, on long press or right click.                       |
+| Option        | Type   | Default                 | Description                                           |
+| ------------- | ------ | ----------------------- | ----------------------------------------------------- |
+| `title`       | string | -                       | Card header. Omit for no header.                      |
+| `rows`        | list   | airflow, speed, bearing | Info rows. See [Rows](#rows).                         |
+| `tap_action`  | action | -                       | Standard Lovelace action, fired by tapping the arrow. |
+| `hold_action` | action | -                       | The same, on long press or right click.               |
+
+The rest of the configuration is grouped: `location`, `house`, `wind`, `airflow`, `arrow`,
+`flow` and `map`, each with its own section below.
 
 ### `location`
 
@@ -164,8 +129,7 @@ point `airflow.entity` at it. The card still colours the arrow from its own calc
 | `longitude` | number | HA home longitude |                                         |
 | `zoom`      | number | `18`              | 1–19. 18–19 shows individual buildings. |
 
-The editor has an address search box. It resolves the address once, when you press Search,
-and stores the result as coordinates, so nothing is looked up while the card is running.
+The editor's address search resolves once, when you press Search, and stores coordinates.
 
 ### `house`
 
@@ -175,85 +139,6 @@ and stores the result as coordinates, so nothing is looked up while the card is 
 | `facade_bearing_entity` | entity | -       | Take it from an entity instead, e.g. an `input_number` you can tune live.     |
 | `footprint`             | list   | -       | Building outline as `[lat, lon]` pairs. Written by Detect; drawn on the card. |
 
-#### Aligning the facade
-
-<p align="center">
-  <img src="images/editor.png" alt="The editor's Where section: address search, a map with the alignment guide, and the Detect button" width="380">
-</p>
-
-Open the card editor and look for **Where**. Pan the map to your house, press
-**Detect from OpenStreetMap**, and you are usually done.
-
-Detection runs at whatever the map is centred on, not at the coordinates already in the
-config, so panning is how you tell it where to look. It draws every building it found,
-labelled with its house number, picks the one under the centre, reads that outline's walls,
-and faces the one pointing at the street.
-
-Which street matters on a corner. If the building carries an `addr:street` tag, the wall is
-faced towards the road of that name rather than whichever road happens to be closest, since
-on a corner plot the side street is usually nearer than the one the house is numbered on.
-Without a matching name it falls back to nearest.
-
-**It also moves the card's position onto the building it settled on**, so the map and the
-facade angle always describe the same house. This is the easiest way to set your location:
-pan, detect, done.
-
-Detection also stores the outline in `house.footprint`, and the card draws it faintly under
-the arrow, so the arrow reads against the actual shape of your house rather than a generic
-map tile. Nothing is looked up while the card runs: the outline is a handful of coordinate
-pairs in the config.
-
-The outline belongs to one building, so anything that moves the card without detecting
-again, an address search, **Use home**, or typing new coordinates, clears it. The editor says
-whether one is stored and offers **Clear outline** if you would rather the card did not draw
-it.
-
-Cards configured before 1.0.0 have no outline stored, and nothing backfills one. Press
-**Detect** once and it is saved with everything else.
-
-**If it picked the wrong building, click yours on the map.** The detection re-runs against
-that outline. This is worth doing whenever the highlighted house is not the right number:
-the automatic choice depends on your coordinates landing inside the correct polygon, which
-is the one part of the setup you cannot otherwise check.
-
-If your building is not mapped at all, or detection picks the wrong _wall_, drag the line
-onto the front of the house instead. It snaps to a wall whenever an outline is loaded, so
-you get the building's real angle rather than an eyeballed one.
-
-Three levels of adjustment, coarse to fine:
-
-| Control                           | Step                                                            |
-| --------------------------------- | --------------------------------------------------------------- |
-| Drag the line                     | free, snapping to a wall within 8° (hold Shift to drag past it) |
-| Arrow keys, with the line focused | 1°, or 5° with Shift                                            |
-| The rotate buttons                | 0.1°                                                            |
-
-The lookup runs once per button press and only in the editor. The result is stored as a
-single number, so nothing is queried while the card is running.
-
-#### The guide overlay
-
-While you align, the editor draws a guide over the map:
-
-- a **thin dashed line spanning the whole map**: rotate it until it lies along the front
-  wall of your house. It runs edge to edge on purpose, because alignment error shows up at
-  the ends of a long line, and it is dashed so the roofline stays visible underneath;
-- a **chevron on the rim** marking which side of that line is the front;
-- **two shaded sectors**: wind arriving from either one blows through the house rather
-  than across it. The solid-edged sector is the front. Their width is `sideways_from`, so
-  you can see what that threshold means for your building.
-
-The line spans the map so that it can be sighted along, which also puts it in the way of
-panning. Use the **eye button** beside the bearing readout to hide it while you move the
-map, then show it again to fine-tune.
-
-The editor's map is always light whatever your dashboard theme, because building outlines
-are considerably easier to see against it. The card's own basemap is separate and follows
-`map.tiles`.
-
-The guide exists only in the editor. Once saved, the card shows the map, the arrow and your
-rows, with no alignment furniture.
-
 ### `wind`
 
 | Option           | Type        | Default  | Description                                                         |
@@ -262,36 +147,18 @@ rows, with no alignment furniture.
 | `speed_entity`   | `sensor.*`  | -        | Override just the speed.                                            |
 | `bearing_entity` | `sensor.*`  | -        | Override just the bearing. Accepts degrees or compass text (`NNW`). |
 | `gust_entity`    | `sensor.*`  | -        | Override just the gust.                                             |
-| `speed_unit`     | see below   | `source` | Unit to show speed and gust in. See [Speed units](#speed-units).    |
+| `speed_unit`     | see below   | `source` | Unit to show speed and gust in.                                     |
 
-An override always wins over the weather entity. An override that is `unavailable` reads as
-no data rather than silently falling back.
+An override always wins over the weather entity. One that is `unavailable` reads as no data
+rather than silently falling back.
 
-#### Speed units
+**`speed_unit`** takes `source`, `km/h`, `m/s`, `mph`, `kn` or `bft`. `source` keeps whatever
+your integration reports; the rest **convert** the reading, so `36 km/h`, `10 m/s`,
+`22.4 mph`, `19.4 kn` and `5 Bft` are all the same wind. Converted values round to one
+decimal; Beaufort rounds down into the force the wind is in and is always whole.
 
-`source` keeps whatever your integration reports, which is the default and what the card has
-always done. The rest **convert** the reading:
-
-| Value  | Shows as   |
-| ------ | ---------- |
-| `km/h` | `36 km/h`  |
-| `m/s`  | `10 m/s`   |
-| `mph`  | `22.4 mph` |
-| `kn`   | `19.4 kn`  |
-| `bft`  | `5 Bft`    |
-
-Those are all the same wind. Converted readings are rounded to one decimal, because
-converting turns a tidy 50 km/h into 13.88888888888889 m/s. Beaufort is a set of bands
-rather than a unit, so it rounds down to the force the wind is in and is always whole:
-force 4.7 would claim a precision the scale does not have.
-
-This is not the same as a row's `unit`, which only relabels. Setting `unit: mph` on a row
-with a km/h source prints a km/h number beside the word mph, which is the trap this option
-exists to close.
-
-`airflow.weak_below` is read in this unit too, so the number you type is the number you see.
-Changing the unit does not rewrite the threshold: switching to `bft` with `weak_below: 5`
-means below force 5, not below 5 km/h.
+This is not a row's `unit`, which only relabels: `unit: mph` on a km/h source prints a km/h
+number beside the word mph, which is the trap `speed_unit` exists to close.
 
 ### `airflow`
 
@@ -299,13 +166,17 @@ means below force 5, not below 5 km/h.
 | --------------- | ------------------------------ | ----------------------- | -------------------------------------------------------------------------------- |
 | `mode`          | `compute` \| `entity` \| `off` | `compute`               |                                                                                  |
 | `entity`        | entity                         | -                       | Label source when `mode: entity`.                                                |
-| `weak_below`    | number                         | `5`                     | In the wind source's unit.                                                       |
+| `weak_below`    | number                         | `5`                     | In the displayed unit. See below.                                                |
 | `sideways_from` | number                         | `75`                    | Degrees, 1–90.                                                                   |
 | `labels`        | map                            | English/Dutch built-ins | Override any of `front_to_back`, `back_to_front`, `sideways`, `weak`, `unknown`. |
 
+`weak_below` is read in whatever unit the card **displays**, so the number you type is the
+number you see. Changing `wind.speed_unit` does not rewrite it: `bft` with `weak_below: 5`
+means below force 5, not below 5 km/h. The editor shows the unit in the field label.
+
 ### `arrow`
 
-Off by default. The flow already shows direction and speed together; the arrow states the
+Off by default. The flow already shows direction and speed together; the arrow states
 direction more precisely, and some people want both.
 
 | Option       | Type                            | Default    | Description                               |
@@ -317,7 +188,8 @@ direction more precisely, and some people want both.
 
 ### `flow`
 
-On by default.
+Particles carried by the wind, drawn over the map. On by default, because it is the fastest
+way to see what the wind is doing without reading a single number.
 
 | Option       | Type                            | Default         | Description                                     |
 | ------------ | ------------------------------- | --------------- | ----------------------------------------------- |
@@ -327,7 +199,17 @@ On by default.
 | `color_mode` | `airflow` \| `speed` \| `fixed` | follows `arrow` | See [Colour](#colour).                          |
 | `color`      | CSS colour                      | follows `arrow` | Overrides the mode.                             |
 
-`flow: true` is still accepted as shorthand for `flow: { show: true }`.
+`flow: true` is shorthand for `flow: { show: true }`.
+
+**It is a uniform flow, not a wind field.** Windy and similar maps advect particles through a
+grid of vectors from a weather model, which is where their swirls come from. A Home Assistant
+weather entity reports one vector at one point, so every particle here moves the same
+direction at the same speed. It does not bend around your house, and any resemblance to how
+air really moves around a building would be invented. What it adds is speed: the arrow looks
+identical at 4 km/h and 40 km/h, and particle velocity and density do not.
+
+It pauses when scrolled out of view, when the tab is hidden and when the card is removed, and
+draws a single still frame if you have reduced motion enabled.
 
 ### Colour
 
@@ -339,31 +221,15 @@ Both the arrow and the flow take a `color_mode`:
 | `speed`   | How hard it is blowing, on a continuous scale.                                      |
 | `fixed`   | Nothing. Set `color` and it stays there.                                            |
 
-`speed` runs blue-grey through green, yellow and orange to red, with the stops anchored to
-the Beaufort scale so the colour changes where the description of the wind does: light
-breeze at 3.4 m/s, fresh at 8, strong at 13.9, gale at 20.8. Between stops it blends, so a
-card refreshing from 7.9 to 8.1 m/s does not jump a whole colour. Above a gale the scale
-holds at red.
+`speed` runs blue-grey through green, yellow and orange to red, anchored to the Beaufort
+scale so the colour changes where the description of the wind does, and blending between
+stops so a refresh from 7.9 to 8.1 m/s does not jump a whole colour.
 
-The unit is read from your wind source, so 36 km/h, 10 m/s and 19.4 kn all give the same
-colour.
-
-```yaml
-arrow:
-  show: true
-  color_mode: speed
-flow:
-  color_mode: speed
-```
-
-**The flow follows the arrow when it says nothing**, which is what it has always done. Give
-the flow its own `color_mode` to break that link. This matters because the arrow is off by
-default: a card showing only the flow should not have to configure a hidden arrow to change
-the colour of the thing it does show.
-
-The two modes answer different questions, and using one for each is a reasonable setup: an
-arrow coloured by airflow tells you whether to open the windows, while a flow coloured by
-speed tells you how hard it is blowing.
+**The flow follows the arrow unless given its own `color_mode`.** That matters because the
+arrow is off by default: a card showing only the flow should not have to configure a hidden
+arrow to colour the thing it does show. Using one mode for each is reasonable: an arrow
+coloured by airflow tells you whether to open the windows, while a flow coloured by speed
+tells you how hard it is blowing.
 
 ### `map`
 
@@ -377,252 +243,110 @@ speed tells you how hard it is blowing.
 | `aspect_ratio` | string                                           | `4 / 3`     |                                                                                                      |
 | `height`       | number                                           | -           | Fixed pixel height; overrides `aspect_ratio`.                                                        |
 
-### Wind flow
-
-Particles carried by the wind, drawn over the map. On by default, because it is the fastest
-way to see what the wind is doing without reading a single number.
-
-```yaml
-flow:
-  show: true
-  opacity: 0.5
-  speed: 1
-```
-
-**It is a uniform flow, not a wind field.** Windy and similar maps advect particles through a
-grid of vectors from a weather model, which is where their swirls come from. A Home Assistant
-weather entity reports one vector at one point, so every particle here moves in the same
-direction at the same speed. The flow does not bend around your house, and any resemblance to
-how air actually moves around a building would be invented.
-
-What it adds is speed. The arrow states direction precisely and looks identical at 4 km/h and
-40 km/h; particle velocity and density make that difference visible without reading a number.
-Colour follows the arrow's setting unless the flow is given one of its own. See
-[Colour](#colour).
-
-It pauses when scrolled out of view, when the browser tab is hidden and when the card is
-removed, and draws a single still frame if you have reduced motion enabled.
-
 ### Rows
 
-Each row is one of three kinds.
-
-**Built-in value**, no entity needed:
+Each row is one of three kinds:
 
 ```yaml
-- source: airflow # airflow | speed | gust | bearing | cardinal
-  size: large
+rows:
+  - source: airflow # built-in: airflow | speed | gust | bearing | cardinal
+    size: large
+  - entity: sensor.outside_temperature
+    attribute: humidity # optional: read an attribute instead of the state
+  - template: "{{ states('sensor.window_airflow_direction') }}"
+    icon: mdi:window-open
 ```
 
-**Entity:**
-
-```yaml
-- entity: sensor.outside_temperature
-  attribute: humidity # optional: read an attribute instead of the state
-  precision: 1
-```
-
-**Template**, rendered over the websocket API, same as any other template card:
-
-```yaml
-- template: "{{ states('sensor.window_airflow_direction') }}"
-  icon: mdi:window-open
-```
-
-Shared options: `name` (or `false` to hide), `icon` (or `false`), `prefix`, `suffix`,
-`unit` (or `false`), `precision`, `size` (`small` / `normal` / `large`), `tap_action`.
-
-A `large` row takes the full width on its own line; `normal` and `small` rows share a line.
-
-## Upgrading
-
-### 2.0 to 3.0
-
-Several defaults changed, which affects any card that did not set them:
-
-- **The basemap no longer follows the dashboard theme.** Unset now means
-  OpenStreetMap light. Set `map: { tiles: auto }` to get the old behaviour back.
-- **`airflow.sideways_from` is 75, was 45.** Sideways is now the narrow band, so more wind
-  directions read as front-to-back or back-to-front.
-- **`flow.opacity` is 0.5, was 1.** The map stays readable underneath.
-
-Nothing was removed, so no configuration needs rewriting. New in this release, both opt-in:
-`color_mode: speed` on the arrow or the flow, and [`wind.speed_unit`](#speed-units) for
-showing the speed in km/h, m/s, mph, knots or Beaufort.
-
-### 1.x to 2.0
-
-Two defaults changed, so a dashboard that set nothing will look different after the update:
-
-- **The flow animation is now on**, and the arrow is now off. Previously it was the other
-  way round. To keep the old look, set `arrow: { show: true }` and `flow: { show: false }`.
-- **`arrow.hide` and `flow.hide` are gone.** Use `show`, which is the positive form: `true`
-  means visible, in the editor and in YAML alike. A leftover `hide` key is ignored rather
-  than rejected, so a card carrying one keeps working, at the new defaults.
-
-The visual editor writes the new keys for you. Opening the card's editor and saving is enough.
-
-## Attribution and fair use
-
-The default basemaps are served by OpenStreetMap and CARTO under their public tile usage
-policies. Attribution is shown by default; please leave it on. If you embed this card on
-many dashboards or run kiosk displays that reload constantly, point `tile_url` at your own
-tile server.
-
-Address search uses OpenStreetMap's Nominatim service, one request per search, from the
-editor only.
+Shared options: `name` (or `false` to hide), `icon` (or `false`), `prefix`, `suffix`, `unit`
+(or `false`), `precision`, `size` (`small` / `normal` / `large`), `tap_action`. A `large` row
+takes a full line; `normal` and `small` share one.
 
 ## Troubleshooting
 
 **"Custom element doesn't exist: airflow-map-card"**
-The resource did not load. Check the file is at `config/www/airflow-map-card.js`, that the
-resource is registered as a **JavaScript module** and not "JavaScript file", and hard-refresh.
+The resource did not load. Check the file is at `config/www/airflow-map-card.js`, that it is
+registered as a **JavaScript module** and not "JavaScript file", and hard-refresh.
 
 **The card renders but the map area is blank**
 Almost always the map container having no height. The card reports map failures on its own
-face, so if it says nothing, open the browser console. Setting `map.height` to a fixed pixel
-value is a quick way to confirm.
+face, so if it says nothing, check the browser console. Setting `map.height` to a fixed pixel
+value confirms it quickly.
 
 **The arrow points the opposite way to what I expect**
-`wind_bearing` in Home Assistant is the direction the wind comes _from_; the arrow points the
-way the air travels, which is the reciprocal. If it is still wrong, your integration may be
-reporting a travel direction instead. Override it with `wind.bearing_entity`.
+`wind_bearing` is the direction the wind comes _from_; the arrow points the way the air
+travels. If it is still wrong, your integration may report a travel direction instead.
+Override it with `wind.bearing_entity`.
 
 **Airflow says Sideways when it looks head-on**
-Re-check `house.facade_bearing` in the editor with the alignment guide. The common
-mistake is aligning to a side wall rather than the front; the editor's Detect button and the
-building outline exist to prevent exactly that.
+Re-check `house.facade_bearing` with the alignment guide. The common mistake is aligning to a
+side wall rather than the front.
 
 **Detect says "No building mapped here"**
-Your building may simply not be mapped in OpenStreetMap yet. Buildings mapped as relations
-rather than ways are supported, so that is no longer the likely cause. Check
+Your building may not be mapped in OpenStreetMap yet. Check
 [openstreetmap.org](https://www.openstreetmap.org/) for your address, and drag the guide
-handle to set the angle by hand in the meantime.
+handle to set the angle by hand meanwhile.
 
 **Detect says OpenStreetMap is busy**
 Overpass rate-limits aggressively. Wait a minute and try again.
+
+## Attribution and fair use
+
+The default basemaps come from OpenStreetMap and CARTO under their public tile usage
+policies. Attribution is shown by default; please leave it on. If you run this on many
+dashboards or on kiosk displays that reload constantly, point `tile_url` at your own tile
+server. Address search uses Nominatim, one request per search, from the editor only.
 
 ## Development
 
 ```bash
 npm install
-npm run dev
-```
-
-Four harnesses run against a mock `hass` object, with no Home Assistant instance needed:
-
-- `http://localhost:5173`: the card, with sliders for wind bearing, speed and facade
-  orientation, and a toggle for the animated flow.
-- `http://localhost:5173/picker.html`: the editor's facade picker, including live
-  OpenStreetMap detection.
-- `http://localhost:5173/editor.html`: the whole visual editor, with the resulting YAML
-  beside it. The Home Assistant frontend elements it needs are stubbed in `dev/ha-stubs.ts`.
-- `http://localhost:5173/demo.html`: the screenshot gallery. See
-  [Screenshots](#screenshots).
-
-```bash
-npm test          # compass maths, airflow, rows, footprint geometry, editor schemas
+npm run dev     # card at /, picker at /picker.html, editor at /editor.html,
+                # screenshot gallery at /demo.html
+npm test
 npm run lint
-npm run build     # produces dist/airflow-map-card.js
+npm run build   # produces dist/airflow-map-card.js
 ```
 
-The build uses esbuild directly rather than Vite's library mode, which does not minify here;
-see `scripts/build.mjs`. Vite is used only for the dev server.
+Every harness runs against a mock `hass`, with no Home Assistant instance needed. The
+frontend elements the editor needs are stubbed in `dev/ha-stubs.ts`.
 
-### Screenshots
-
-`demo.html` renders the card in each state worth showing, so no screenshot has to come from
-a real dashboard. Every one is of the **Rietveld Schroder House** in Utrecht, using its
-genuine OpenStreetMap footprint: a museum rather than anyone's home, so a screenshot cannot
-leak an address, and still a real house on a real street, so the outline, the facade angle
-and the neighbours all look like what a user will actually see.
-
-Capturing is a script, not a manual step. A screenshot is a build artifact like any other:
-the card changes and the picture in the README quietly stops being true.
-
-```bash
-npx playwright install chromium   # once
-npm run screenshots               # all four, into images/
-npm run screenshots sideways      # just one
-```
-
-It starts the dev server itself, waits for every tile to finish loading and for the particles
-to lay down trails, and captures at 2x for a display that deserves it. No cropping step, so
-the OpenStreetMap credit cannot be clipped, which the tile licence requires stays visible.
-
-It writes `card.png`, the two used above, plus `sideways.png`, `back-to-front.png` and
-`weak.png`. `editor.png` comes from the editor harness, which is pointed at the same house,
-and is captured down to the **Where** panel: the rest of the editor photographs as a stack of
-collapsed headers.
-
-Append `?solo=<id>` to look at one in the browser, with the ids being `front-to-back`,
-`sideways`, `back-to-front` and `weak`.
-
-```
-http://localhost:5173/demo.html?solo=sideways&width=460
-```
-
-### Conventions worth knowing
-
-Most of the odd-looking code here is odd because of a specific bug. The comments say which,
-and these are the ones that cost the most time to rediscover:
-
-- **All compass and geometry maths lives in `src/data/bearing.ts` and `src/data/footprint.ts`.**
-  A sign error in this domain produces an answer that looks entirely plausible and is 180
-  degrees wrong, which is why it is isolated and heavily tested. Do not do angle arithmetic
-  anywhere else.
-- **A card cannot write its own configuration.** Anything that persists a value belongs in
-  `src/editor/`, which can fire `config-changed`. This constraint shapes the whole editor.
-- **Never put a backtick inside a `css` tagged template**, including in a comment. It
-  terminates the template literal, and the error points somewhere else entirely.
-- **Style Leaflet through CSS classes, never its `color` option.** Leaflet writes that into
-  the SVG `stroke` attribute, where `var(--primary-color)` is not valid and renders black.
-- **The map's height comes from percentage padding, not `aspect-ratio`.** On a flex item
-  whose height is still resolving, `aspect-ratio` collapses to zero inside Home Assistant's
-  sections grid. That shipped once and rendered a blank card.
-- **The Overpass lookup sets `referrerPolicy: 'origin'` and needs it.** Home Assistant serves
-  `Referrer-Policy: no-referrer`, and Overpass rejects a browser user agent with no referrer.
-  It reproduces only inside Home Assistant, never in the harness, so a test asserts it.
+`npm run screenshots` regenerates every image in this README from `demo.html`, so a picture
+cannot quietly stop being true. It needs `npx playwright install chromium` once. Each shot is
+of the Rietveld Schroder House in Utrecht: a museum rather than anyone's home, so no
+screenshot can leak an address, and still a real house on a real street.
 
 ## Contributing
 
-Issues and pull requests are welcome.
-
-`main` is protected: changes reach it through a pull request that passes CI and is approved
-by the maintainer. Fork the repository, work on a branch, and open a PR against `main`.
+Issues and pull requests are welcome. `main` is protected, so work on a branch and open a PR;
+`npm test`, `npm run lint` and `npm run build` should all pass, and commits follow
+Conventional Commits.
 
 Most useful right now:
 
-- **Screenshots from other setups.** Different themes, integrations and house shapes. Keep
-  them under about 1 MB, and avoid anything that identifies a real address more precisely
-  than the feature needs.
-- **Reports from other weather integrations.** The airflow maths has been checked against one
-  setup; wind units and `wind_bearing` conventions differ between integrations, and a
-  mismatch produces a plausible wrong answer rather than an obvious failure.
+- **Reports from other weather integrations.** The airflow maths has been checked against a
+  small number of setups. Wind units and `wind_bearing` conventions differ, and a mismatch
+  produces a plausible wrong answer rather than an obvious failure. Include your Home
+  Assistant version, the card version from the browser console, and your YAML.
 - **Buildings the facade detection gets wrong.** An OpenStreetMap link plus what it should
   have picked is enough to turn into a test.
+- **Screenshots from other setups.** Different themes, integrations and house shapes.
 
-Before opening one:
+Keep compass and geometry maths in `src/data/bearing.ts` and `src/data/footprint.ts` and add
+tests there. A sign error in that domain produces an answer that looks entirely plausible and
+is 180 degrees wrong, which is why it is isolated and heavily tested. Most of the other
+odd-looking code is odd because of a specific bug, and the comments say which.
 
-- `npm test`, `npm run lint` and `npm run build` should all pass.
-- Keep compass and geometry maths in `src/data/bearing.ts` and `src/data/footprint.ts`, and
-  add tests there. Sign errors in this domain produce plausible-looking wrong answers rather
-  than obvious failures, which is why that code is isolated and heavily tested.
-- Follow Conventional Commits.
-
-## Status
-
-Each [release](https://github.com/striekels/airflow-map-card/releases) lists what changed,
-built from the commit subjects. The reasoning lives in the commits themselves, next to the
-diff it explains, and `git log` reads it better than a release page would. Known problems and
-planned work live in [issues](https://github.com/striekels/airflow-map-card/issues).
+What changed in each version is in the
+[releases](https://github.com/striekels/airflow-map-card/releases), built from commit
+subjects. Known problems and planned work are in
+[issues](https://github.com/striekels/airflow-map-card/issues).
 
 ## Credits
 
 Basemaps © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors and
-[CARTO](https://carto.com/attributions). Geocoding by
-[Nominatim](https://nominatim.org/); building outlines via the
-[Overpass API](https://overpass-api.de/). Mapping by [Leaflet](https://leafletjs.com/).
+[CARTO](https://carto.com/attributions). Geocoding by [Nominatim](https://nominatim.org/);
+building outlines via the [Overpass API](https://overpass-api.de/). Mapping by
+[Leaflet](https://leafletjs.com/).
 
 ## License
 
