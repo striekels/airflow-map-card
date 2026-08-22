@@ -6,6 +6,7 @@ import type { WindReading } from './wind-source';
 import { cardinalName } from './bearing';
 import { strings } from '../localize';
 import type { TemplateSubscriber } from './templates';
+import { convertSpeed, speedUnitLabel, type SpeedUnit } from './wind-speed';
 
 export interface ResolvedRow {
   key: string;
@@ -27,6 +28,8 @@ export interface RowContext {
   airflowLabel: string;
   templates: TemplateSubscriber;
   language: string;
+  /** Display unit for speed and gust. Unset leaves the reading alone. */
+  speedUnit?: SpeedUnit;
 }
 
 const VIRTUAL_ICONS: Record<string, string> = {
@@ -134,10 +137,10 @@ function virtualValue(ctx: RowContext, row: RowConfig): string {
       return airflowLabel;
 
     case 'speed':
-      return formatNumber(wind.speed, row.precision, unitFor(row, wind.speedUnit));
+      return formatSpeed(ctx, row, wind.speed);
 
     case 'gust':
-      return formatNumber(wind.gust, row.precision, unitFor(row, wind.speedUnit));
+      return formatSpeed(ctx, row, wind.gust);
 
     case 'bearing':
       return formatNumber(wind.bearing, row.precision ?? 0, unitFor(row, '°'), true);
@@ -148,6 +151,41 @@ function virtualValue(ctx: RowContext, row: RowConfig): string {
     default:
       return '—';
   }
+}
+
+/**
+ * A speed, converted into the configured unit and labelled with it.
+ *
+ * `row.unit` still wins, because it always has, but it only relabels: setting
+ * it to mph on a km/h source prints a km/h number next to the word mph. That is
+ * the trap `wind.speed_unit` exists to close, so the two do not overlap.
+ *
+ * Beaufort is a whole number by nature. Printing force 4.7 would suggest a
+ * precision the scale does not have.
+ */
+function formatSpeed(ctx: RowContext, row: RowConfig, value: number | null): string {
+  const converted = convertSpeed(value, ctx.wind.speedUnit, ctx.speedUnit);
+  const label = speedUnitLabel(ctx.speedUnit, ctx.wind.speedUnit);
+  return formatNumber(converted, speedPrecision(ctx.speedUnit, row.precision), unitFor(row, label));
+}
+
+/**
+ * Converting turns a tidy reading into a long one: 50 km/h becomes
+ * 13.88888888888889 m/s, and the card printed all of it. An unconverted
+ * reading arrives already rounded by the integration, so this only bites once
+ * a unit is chosen, and only in the rendered card rather than in any of the
+ * maths.
+ *
+ * One decimal for real units. Beaufort is a whole number by nature, and force
+ * 4.7 would claim a precision the scale does not have.
+ */
+function speedPrecision(
+  unit: SpeedUnit | undefined,
+  configured: number | undefined,
+): number | undefined {
+  if (configured !== undefined) return unit === 'bft' ? 0 : configured;
+  if (!unit || unit === 'source') return undefined;
+  return unit === 'bft' ? 0 : 1;
 }
 
 function unitFor(row: RowConfig, fallback: string | null): string {

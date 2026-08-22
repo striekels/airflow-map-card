@@ -29,6 +29,7 @@ import { strings } from './localize';
 import './editor';
 import { resolveFlow, type ResolvedFlow } from './data/flow';
 import { speedColor } from './data/speed-color';
+import { thresholdMetresPerSecond, toMetresPerSecond } from './data/wind-speed';
 
 const DEFAULT_ROWS: RowConfig[] = [
   { source: 'airflow', size: 'large' },
@@ -191,6 +192,7 @@ export class AirflowMapCard extends LitElement {
           airflowLabel,
           templates: this._templates,
           language: this._language,
+          speedUnit: this._config.wind?.speed_unit,
         },
         row,
         index,
@@ -365,9 +367,18 @@ export class AirflowMapCard extends LitElement {
     // colour. Only the displayed label comes from the external entity.
     return computeAirflow({
       windFrom: wind.bearing,
-      speed: wind.speed,
+      // Both sides in metres per second. The threshold is written in whatever
+      // unit the card displays, since that is the number the user is looking at
+      // when they pick it, and the reading arrives in whatever the integration
+      // reports. Comparing them without saying so is how "weak below 5" ends up
+      // meaning 5 km/h against an m/s source.
+      speed: wind.speed === null ? null : toMetresPerSecond(wind.speed, wind.speedUnit),
       facadeBearing: this._facadeBearing(),
-      weakBelow: config.weak_below ?? DEFAULT_WEAK_BELOW,
+      weakBelow: thresholdMetresPerSecond(
+        config.weak_below ?? DEFAULT_WEAK_BELOW,
+        this._config.wind?.speed_unit,
+        wind.speedUnit,
+      ),
       sidewaysFrom: config.sideways_from ?? DEFAULT_SIDEWAYS_FROM,
     });
   }

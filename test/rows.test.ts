@@ -32,6 +32,42 @@ function context(overrides: Partial<RowContext> = {}): RowContext {
   };
 }
 
+describe('resolveRow: speed units', () => {
+  const value = (speedUnit: RowContext['speedUnit'], row = {}) =>
+    resolveRow(context({ speedUnit }), { source: 'speed', ...row }, 0).value;
+
+  it('leaves the reading alone by default, as it always has', () => {
+    expect(value(undefined)).toBe('12.34 km/h');
+    expect(value('source')).toBe('12.34 km/h');
+  });
+
+  it('converts rather than relabelling', () => {
+    expect(value('m/s')).toBe('3.4 m/s');
+    expect(value('mph')).toBe('7.7 mph');
+    expect(value('kn')).toBe('6.7 kn');
+  });
+
+  it('rounds a converted reading, which arrives with every digit it has', () => {
+    // 50 km/h is 13.88888888888889 m/s, and the card printed all of it. The
+    // unit tests could not see this: it only appears once a value is rendered.
+    expect(resolveRow(context({ speedUnit: 'm/s' }), { source: 'gust' }, 0).value).toBe('5.6 m/s');
+  });
+
+  it('honours an explicit precision over the default', () => {
+    expect(value('m/s', { precision: 3 })).toBe('3.428 m/s');
+  });
+
+  it('keeps Beaufort whole, whatever precision is asked for', () => {
+    expect(value('bft')).toBe('3 Bft');
+    expect(value('bft', { precision: 2 })).toBe('3 Bft');
+  });
+
+  it('lets a row relabel the unit, which does not convert', () => {
+    expect(value('m/s', { unit: 'metres per second' })).toBe('3.4 metres per second');
+    expect(value('m/s', { unit: false })).toBe('3.4');
+  });
+});
+
 describe('resolveRow: built-in sources', () => {
   it('renders the airflow label', () => {
     const row = resolveRow(context(), { source: 'airflow', size: 'large' }, 0);

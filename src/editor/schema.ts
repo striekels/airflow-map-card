@@ -73,6 +73,22 @@ export function cardSchema(config: Partial<AirflowMapCardConfig> = {}): unknown[
             { name: 'speed_entity', selector: { entity: { domain: 'sensor' } } },
             { name: 'bearing_entity', selector: { entity: { domain: 'sensor' } } },
             { name: 'gust_entity', selector: { entity: { domain: 'sensor' } } },
+            {
+              name: 'speed_unit',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: [
+                    { value: 'source', label: 'As the source reports it' },
+                    { value: 'km/h', label: 'km/h' },
+                    { value: 'm/s', label: 'm/s' },
+                    { value: 'mph', label: 'mph' },
+                    { value: 'kn', label: 'knots' },
+                    { value: 'bft', label: 'Beaufort' },
+                  ],
+                },
+              },
+            },
           ],
         },
       ],

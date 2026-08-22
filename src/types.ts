@@ -1,3 +1,5 @@
+import type { SpeedUnit } from './data/wind-speed';
+
 import type { HomeAssistant } from './ha-types';
 
 export type RowSize = 'small' | 'normal' | 'large';
@@ -51,6 +53,12 @@ export interface WindConfig {
   speed_entity?: string;
   bearing_entity?: string;
   gust_entity?: string;
+  /**
+   * Display unit for the speed and gust rows. `source` keeps whatever the
+   * integration reports, which is the default and what the card has always
+   * done. Anything else converts the reading rather than just relabelling it.
+   */
+  speed_unit?: SpeedUnit;
 }
 
 export interface AirflowLabels {

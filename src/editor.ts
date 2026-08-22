@@ -31,6 +31,7 @@ import {
 import './editor/facade-picker';
 import { resolveFlow, type ResolvedFlow } from './data/flow';
 import { DEFAULT_TILES } from './map/tiles';
+import { speedUnitLabel } from './data/wind-speed';
 
 @customElement(EDITOR_TYPE)
 export class AirflowMapCardEditor extends LitElement implements LovelaceCardEditor {
@@ -497,6 +498,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
       speed_entity: 'Wind speed override',
       bearing_entity: 'Wind bearing override',
       gust_entity: 'Wind gust override',
+      speed_unit: 'Show speed in',
       facade_bearing: 'Direction the front of the house faces',
       facade_bearing_entity: 'Or take it from an entity',
       mode: 'Mode',
@@ -516,9 +518,15 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
   };
 
   /** Unit of the configured wind source, so thresholds can be labelled. */
+  /**
+   * The unit the speed is shown in, which is the unit `weak_below` is written
+   * in and so the unit its label has to name. Left as the source's, the label
+   * would read km/h beside a field the card reads as Beaufort.
+   */
   private get _windUnit(): string | null {
     if (!this.hass) return null;
-    return resolveWind(this.hass, this._config.wind).speedUnit;
+    const source = resolveWind(this.hass, this._config.wind).speedUnit;
+    return speedUnitLabel(this._config.wind?.speed_unit, source);
   }
 
   // ------------------------------------------------------------------- rows

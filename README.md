@@ -38,6 +38,7 @@ your Home Assistant version, the card version from the browser console, and your
 - [Quick start](#quick-start)
 - [How the direction works](#how-the-direction-works)
 - [Options](#options)
+- [Speed units](#speed-units)
 - [Colour](#colour)
 - [Upgrading](#upgrading)
 - [Attribution and fair use](#attribution-and-fair-use)
@@ -138,9 +139,10 @@ everything the way the air actually travels, which is the reciprocal.
 If you already have a template sensor doing this, keep it: set `airflow.mode: entity` and
 point `airflow.entity` at it. The card still colours the arrow from its own calculation.
 
-> **Units:** `airflow.weak_below` is read in whatever unit your wind source reports. No
-> conversion is applied, so `5` means 5 km/h against a km/h sensor and 5 m/s against an m/s
-> one. The visual editor shows the detected unit in the field label.
+> **Units:** `airflow.weak_below` is read in whatever unit the card is **displaying**, which
+> by default is whatever your wind source reports. Set [`wind.speed_unit`](#speed-units) and
+> the threshold follows it, so the number in the field is the number on the card. The visual
+> editor shows the unit in the field label either way.
 
 ## Options
 
@@ -254,15 +256,42 @@ rows, with no alignment furniture.
 
 ### `wind`
 
-| Option           | Type        | Default | Description                                                         |
-| ---------------- | ----------- | ------- | ------------------------------------------------------------------- |
-| `entity`         | `weather.*` | -       | Source for speed, bearing and gust.                                 |
-| `speed_entity`   | `sensor.*`  | -       | Override just the speed.                                            |
-| `bearing_entity` | `sensor.*`  | -       | Override just the bearing. Accepts degrees or compass text (`NNW`). |
-| `gust_entity`    | `sensor.*`  | -       | Override just the gust.                                             |
+| Option           | Type        | Default  | Description                                                         |
+| ---------------- | ----------- | -------- | ------------------------------------------------------------------- |
+| `entity`         | `weather.*` | -        | Source for speed, bearing and gust.                                 |
+| `speed_entity`   | `sensor.*`  | -        | Override just the speed.                                            |
+| `bearing_entity` | `sensor.*`  | -        | Override just the bearing. Accepts degrees or compass text (`NNW`). |
+| `gust_entity`    | `sensor.*`  | -        | Override just the gust.                                             |
+| `speed_unit`     | see below   | `source` | Unit to show speed and gust in. See [Speed units](#speed-units).    |
 
 An override always wins over the weather entity. An override that is `unavailable` reads as
 no data rather than silently falling back.
+
+#### Speed units
+
+`source` keeps whatever your integration reports, which is the default and what the card has
+always done. The rest **convert** the reading:
+
+| Value  | Shows as   |
+| ------ | ---------- |
+| `km/h` | `36 km/h`  |
+| `m/s`  | `10 m/s`   |
+| `mph`  | `22.4 mph` |
+| `kn`   | `19.4 kn`  |
+| `bft`  | `5 Bft`    |
+
+Those are all the same wind. Converted readings are rounded to one decimal, because
+converting turns a tidy 50 km/h into 13.88888888888889 m/s. Beaufort is a set of bands
+rather than a unit, so it rounds down to the force the wind is in and is always whole:
+force 4.7 would claim a precision the scale does not have.
+
+This is not the same as a row's `unit`, which only relabels. Setting `unit: mph` on a row
+with a km/h source prints a km/h number beside the word mph, which is the trap this option
+exists to close.
+
+`airflow.weak_below` is read in this unit too, so the number you type is the number you see.
+Changing the unit does not rewrite the threshold: switching to `bft` with `weak_below: 5`
+means below force 5, not below 5 km/h.
 
 ### `airflow`
 
