@@ -338,8 +338,7 @@ odd-looking code is odd because of a specific bug, and the comments say which.
 
 What changed in each version is in the
 [releases](https://github.com/striekels/airflow-map-card/releases), built from commit
-subjects. Known problems and planned work are in
-[issues](https://github.com/striekels/airflow-map-card/issues).
+subjects.
 
 ## Credits
 
