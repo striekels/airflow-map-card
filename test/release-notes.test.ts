@@ -61,6 +61,7 @@ beforeAll(() => {
   git('tag', 'v2.1.0');
 
   commit('docs: tidy the readme');
+  commit('feat(dev): a harness nobody installs');
   // Describes the footer without being one. A substring search called this a
   // breaking change and put it at the top of the release page.
   commit('fix: parse the BREAKING CHANGE footer', 'Mentions BREAKING CHANGE in prose.');
@@ -116,6 +117,13 @@ describe('releaseNotes', () => {
     expect(notes).not.toContain('### Breaking changes');
   });
 
+  it('folds a dev-scoped feature away, since it is not in what people install', () => {
+    const notes = releaseNotes('v2.1.0', 'HEAD', { cwd: repo });
+    expect(notes).toContain('a harness nobody installs');
+    expect(notes).toContain('<summary>Other changes</summary>');
+    expect(notes).not.toContain('### Features');
+  });
+
   it('keeps a section out when nothing in the range belongs to it', () => {
     expect(releaseNotes('v1.0.0', 'v1.1.0', { cwd: repo })).not.toContain('### Performance');
   });
@@ -135,6 +143,14 @@ describe('nextVersion', () => {
   });
 
   it('is a patch for a fix, and is not fooled by prose in the body', () => {
+    expect(nextVersion('2.1.0', 'v2.1.0', { cwd: repo })).toBe('2.1.1');
+  });
+
+  it('does not bump a minor for a change that is not in the bundle', () => {
+    // The range holds a feat(dev). A minor release whose Features section is
+    // empty, because the only feature was folded away, would puzzle anyone
+    // reading it.
+    expect(releaseNotes('v2.1.0', 'HEAD', { cwd: repo })).not.toContain('### Features');
     expect(nextVersion('2.1.0', 'v2.1.0', { cwd: repo })).toBe('2.1.1');
   });
 });

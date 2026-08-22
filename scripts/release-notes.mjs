@@ -29,6 +29,14 @@ const SECTIONS = [
 /** Everything else, folded away. Real changes, rarely the reason to upgrade. */
 const QUIET = ['refactor', 'docs', 'test', 'build', 'ci', 'chore', 'style'];
 
+/**
+ * Scopes that are folded away whatever their type. The dev harness and the
+ * screenshot tooling are features, and a real one landed in each, but they are
+ * not part of the card anyone downloads: a reader scanning Features for what
+ * changed in the thing they installed should not have to skip past them.
+ */
+const QUIET_SCOPES = ['dev'];
+
 // `cwd` exists so the tests can point this at a repository they built
 // themselves. Reading the real log would tie them to a full clone with tags,
 // which CI does not make and a history rewrite would invalidate.
@@ -82,15 +90,19 @@ export function releaseNotes(from, to = 'HEAD', { cwd } = {}) {
   const commits = commitsIn(from ? `${from}..${to}` : to, cwd);
   const out = [];
 
+  const loud = (c) => !QUIET_SCOPES.includes(c.scope ?? '');
+
   for (const section of SECTIONS) {
     const matching = commits.filter((c) =>
-      section.key === 'breaking' ? c.breaking : c.type === section.key && !c.breaking,
+      section.key === 'breaking'
+        ? c.breaking
+        : c.type === section.key && !c.breaking && loud(c),
     );
     if (matching.length === 0) continue;
     out.push(section.title, '', ...matching.map(line), '');
   }
 
-  const quiet = commits.filter((c) => !c.breaking && QUIET.includes(c.type));
+  const quiet = commits.filter((c) => !c.breaking && (QUIET.includes(c.type) || !loud(c)));
   if (quiet.length > 0) {
     out.push(
       '<details>',
@@ -113,7 +125,12 @@ export function releaseNotes(from, to = 'HEAD', { cwd } = {}) {
  * which is what the 0.x contract means.
  */
 export function nextVersion(current, from, { cwd } = {}) {
-  const commits = commitsIn(from ? `${from}..HEAD` : 'HEAD', cwd);
+  // Quiet scopes are left out of the notes, so they are left out of the number
+  // too. A minor release whose Features section is empty would be a release
+  // nobody can see the point of.
+  const commits = commitsIn(from ? `${from}..HEAD` : 'HEAD', cwd).filter(
+    (c) => !QUIET_SCOPES.includes(c.scope ?? ''),
+  );
 
   const [major, minor, patch] = current.split('.').map(Number);
   if (commits.some((c) => c.breaking)) {
