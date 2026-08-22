@@ -1,6 +1,36 @@
 import type { HomeAssistant } from '../ha-types';
 import type { ActionConfig } from '../types';
 
+/**
+ * The schemes a `url` action may open.
+ *
+ * A card's configuration is written by the person whose dashboard it is, so
+ * this is not a hole so much as a sharp edge: card YAML gets copied off forums
+ * and out of blog posts, and `javascript:` in a `url_path` executes on the
+ * dashboard when tapped.
+ *
+ * `mailto:` and `tel:` are left out because nothing has asked for them, not
+ * because they are dangerous. Add them here if they ever come up.
+ */
+const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:']);
+
+/**
+ * Resolve a `url_path` to something safe to open, or null to refuse.
+ *
+ * Relative paths are fine and resolve against the dashboard, which is what
+ * `/local/...` links rely on. `base` is a parameter rather than read from
+ * `window` so the rule can be tested without a DOM.
+ */
+export function safeUrl(path: string, base: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(path, base);
+  } catch {
+    return null;
+  }
+  return ALLOWED_URL_SCHEMES.has(url.protocol) ? url.href : null;
+}
+
 export function fireEvent<T>(node: HTMLElement | Window, type: string, detail?: T): void {
   node.dispatchEvent(
     new CustomEvent(type, { detail, bubbles: true, composed: true, cancelable: false }),
@@ -65,7 +95,9 @@ export function handleAction(
     }
 
     case 'url': {
-      if (config.url_path) window.open(config.url_path, '_blank', 'noreferrer');
+      if (!config.url_path) return;
+      const url = safeUrl(config.url_path, window.location.href);
+      if (url) window.open(url, '_blank', 'noreferrer');
       return;
     }
 

@@ -86,12 +86,18 @@
 
       /* Solo mode: nothing on the page but the card, so a window capture needs
          no cropping and cannot clip the tile attribution. */
+      /*
+         Pinned to a whole-pixel offset rather than centred. Centring left the
+         card on a half pixel, which put every tile edge off the device-pixel
+         grid and drew a crease across the captured map. The card was blamed
+         for that once already.
+      */
       body.solo {
-        padding: 0;
+        padding: 24px;
         background: #f2f4f6;
         min-height: 100vh;
         display: grid;
-        place-items: center;
+        place-items: start center;
       }
 
       body.solo.dark {
