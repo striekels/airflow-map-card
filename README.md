@@ -38,6 +38,7 @@ your Home Assistant version, the card version from the browser console, and your
 - [Quick start](#quick-start)
 - [How the direction works](#how-the-direction-works)
 - [Options](#options)
+- [Colour](#colour)
 - [Upgrading](#upgrading)
 - [Attribution and fair use](#attribution-and-fair-use)
 - [Troubleshooting](#troubleshooting)
@@ -278,24 +279,62 @@ no data rather than silently falling back.
 Off by default. The flow already shows direction and speed together; the arrow states the
 direction more precisely, and some people want both.
 
-| Option       | Type                 | Default    | Description                           |
-| ------------ | -------------------- | ---------- | ------------------------------------- |
-| `show`       | boolean              | `false`    | Turn the arrow on.                    |
-| `size`       | number               | `130`      | Pixels.                               |
-| `color_mode` | `airflow` \| `fixed` | `airflow`  |                                       |
-| `color`      | CSS colour           | per bucket | Only used when `color_mode` is fixed. |
+| Option       | Type                            | Default    | Description                               |
+| ------------ | ------------------------------- | ---------- | ----------------------------------------- |
+| `show`       | boolean                         | `false`    | Turn the arrow on.                        |
+| `size`       | number                          | `130`      | Pixels.                                   |
+| `color_mode` | `airflow` \| `speed` \| `fixed` | `airflow`  | See [Colour](#colour).                    |
+| `color`      | CSS colour                      | per bucket | Overrides the mode. Required for `fixed`. |
 
 ### `flow`
 
 On by default.
 
-| Option    | Type    | Default | Description                                     |
-| --------- | ------- | ------- | ----------------------------------------------- |
-| `show`    | boolean | `true`  | Turn the animation off if it distracts you.     |
-| `opacity` | number  | `0.5`   | 0.1 to 1, scaling how strongly it is drawn.     |
-| `speed`   | number  | `1`     | 0.25 to 3, multiplying how fast particles move. |
+| Option       | Type                            | Default         | Description                                     |
+| ------------ | ------------------------------- | --------------- | ----------------------------------------------- |
+| `show`       | boolean                         | `true`          | Turn the animation off if it distracts you.     |
+| `opacity`    | number                          | `0.5`           | 0.1 to 1, scaling how strongly it is drawn.     |
+| `speed`      | number                          | `1`             | 0.25 to 3, multiplying how fast particles move. |
+| `color_mode` | `airflow` \| `speed` \| `fixed` | follows `arrow` | See [Colour](#colour).                          |
+| `color`      | CSS colour                      | follows `arrow` | Overrides the mode.                             |
 
 `flow: true` is still accepted as shorthand for `flow: { show: true }`.
+
+### Colour
+
+Both the arrow and the flow take a `color_mode`:
+
+| Mode      | What the colour means                                                               |
+| --------- | ----------------------------------------------------------------------------------- |
+| `airflow` | Which way the air moves through the house: green through, orange across, grey weak. |
+| `speed`   | How hard it is blowing, on a continuous scale.                                      |
+| `fixed`   | Nothing. Set `color` and it stays there.                                            |
+
+`speed` runs blue-grey through green, yellow and orange to red, with the stops anchored to
+the Beaufort scale so the colour changes where the description of the wind does: light
+breeze at 3.4 m/s, fresh at 8, strong at 13.9, gale at 20.8. Between stops it blends, so a
+card refreshing from 7.9 to 8.1 m/s does not jump a whole colour. Above a gale the scale
+holds at red.
+
+The unit is read from your wind source, so 36 km/h, 10 m/s and 19.4 kn all give the same
+colour.
+
+```yaml
+arrow:
+  show: true
+  color_mode: speed
+flow:
+  color_mode: speed
+```
+
+**The flow follows the arrow when it says nothing**, which is what it has always done. Give
+the flow its own `color_mode` to break that link. This matters because the arrow is off by
+default: a card showing only the flow should not have to configure a hidden arrow to change
+the colour of the thing it does show.
+
+The two modes answer different questions, and using one for each is a reasonable setup: an
+arrow coloured by airflow tells you whether to open the windows, while a flow coloured by
+speed tells you how hard it is blowing.
 
 ### `map`
 
@@ -329,7 +368,8 @@ how air actually moves around a building would be invented.
 
 What it adds is speed. The arrow states direction precisely and looks identical at 4 km/h and
 40 km/h; particle velocity and density make that difference visible without reading a number.
-Colour follows the same airflow classification as the arrow.
+Colour follows the arrow's setting unless the flow is given one of its own. See
+[Colour](#colour).
 
 It pauses when scrolled out of view, when the browser tab is hidden and when the card is
 removed, and draws a single still frame if you have reduced motion enabled.

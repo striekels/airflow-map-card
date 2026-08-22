@@ -17,19 +17,19 @@ import { resolveWind } from './data/wind-source';
 import { geocode, GeocodeError } from './data/geocode';
 import { DEFAULT_SIDEWAYS_FROM, DEFAULT_WEAK_BELOW } from './data/airflow';
 import {
-  EXACT_HOUSE_SCHEMA,
-  EXACT_LOCATION_SCHEMA,
-  FLOW_SETTINGS_SCHEMA,
-  SHOW_SCHEMA,
-  TITLE_SCHEMA,
   arrowSettingsSchema,
   cardSchema,
+  EXACT_HOUSE_SCHEMA,
+  EXACT_LOCATION_SCHEMA,
+  flowSettingsSchema,
   mapSchema,
   rowSchema,
+  SHOW_SCHEMA,
+  TITLE_SCHEMA,
   type RowKind,
 } from './editor/schema';
 import './editor/facade-picker';
-import { resolveFlow } from './data/flow';
+import { resolveFlow, type ResolvedFlow } from './data/flow';
 import { DEFAULT_TILES } from './map/tiles';
 
 @customElement(EDITOR_TYPE)
@@ -218,7 +218,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
             icon: 'mdi:weather-windy',
             on: Boolean(flow.show),
             data: flow,
-            settings: FLOW_SETTINGS_SCHEMA,
+            settings: flowSettingsSchema(flow),
             onToggle: (show) => this._updateFlow({ show }),
             onSettings: (value) => this._updateFlow(value),
           })}
@@ -306,7 +306,7 @@ export class AirflowMapCardEditor extends LitElement implements LovelaceCardEdit
     this._updateConfig({ flow: { ...this._flowConfig, ...patch } });
   }
 
-  private get _flowConfig(): Required<FlowConfig> {
+  private get _flowConfig(): ResolvedFlow {
     return resolveFlow(this._config.flow);
   }
 

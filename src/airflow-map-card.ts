@@ -6,7 +6,7 @@ import { leafletStyles } from './map/leaflet-styles';
 
 import { CARD_TYPE, CARD_VERSION, DEFAULT_ARROW_SIZE, DEFAULT_ZOOM, EDITOR_TYPE } from './const';
 import type { HomeAssistant } from './ha-types';
-import type { AirflowMapCardConfig, FlowConfig, RowConfig } from './types';
+import type { AirflowMapCardConfig, ColorMode, RowConfig } from './types';
 import { MapController } from './map/leaflet-map';
 import { resolveTiles } from './map/tiles';
 import { aspectRatioPadding } from './map/aspect';
@@ -27,7 +27,8 @@ import { TemplateSubscriber } from './data/templates';
 import { handleAction } from './data/actions';
 import { strings } from './localize';
 import './editor';
-import { resolveFlow } from './data/flow';
+import { resolveFlow, type ResolvedFlow } from './data/flow';
+import { speedColor } from './data/speed-color';
 
 const DEFAULT_ROWS: RowConfig[] = [
   { source: 'airflow', size: 'large' },
@@ -56,7 +57,7 @@ export class AirflowMapCard extends LitElement {
   private _lastBearing: number | null = null;
 
   /** The flow settings, with every default filled in. */
-  private get _flowConfig(): Required<FlowConfig> {
+  private get _flowConfig(): ResolvedFlow {
     return resolveFlow(this._config.flow);
   }
 
@@ -224,7 +225,7 @@ export class AirflowMapCard extends LitElement {
               ? renderArrow({
                   rotation: this._arrowRotation(wind.bearing),
                   size: arrow.size ?? DEFAULT_ARROW_SIZE,
-                  color: this._arrowColor(airflow),
+                  color: this._arrowColor(airflow, wind),
                   opacity: BUCKET_OPACITY[airflow.bucket],
                   label: this._ariaLabel(wind, airflowLabel, t),
                   interactive: true,
@@ -383,10 +384,39 @@ export class AirflowMapCard extends LitElement {
     return config.labels?.[airflow.bucket] ?? t.airflow[airflow.bucket];
   }
 
-  private _arrowColor(airflow: AirflowResult): string {
-    const arrow = this._config.arrow ?? {};
-    if (arrow.color_mode === 'fixed') return arrow.color ?? BUCKET_COLORS.front_to_back;
-    return arrow.color ?? BUCKET_COLORS[airflow.bucket];
+  /**
+   * Resolve one colour, for whichever of the arrow or the flow asked.
+   *
+   * `speed` reads the wind rather than the classification, so the same reading
+   * that drives the particle density drives the colour. `fixed` and an explicit
+   * `color` both mean the same thing and are kept apart only because the editor
+   * needs a mode to hang the colour field off.
+   */
+  private _colorFor(
+    settings: { color_mode?: ColorMode; color?: string },
+    airflow: AirflowResult,
+    wind: WindReading,
+  ): string {
+    if (settings.color) return settings.color;
+    if (settings.color_mode === 'fixed') return BUCKET_COLORS.front_to_back;
+    if (settings.color_mode === 'speed') return speedColor(wind.speed, wind.speedUnit);
+    return BUCKET_COLORS[airflow.bucket];
+  }
+
+  private _arrowColor(airflow: AirflowResult, wind: WindReading): string {
+    return this._colorFor(this._config.arrow ?? {}, airflow, wind);
+  }
+
+  /**
+   * The flow's colour, falling back to the arrow's settings when it has none of
+   * its own. That fallback is what the flow has always done, and dropping it
+   * would silently repaint every card that set `arrow.color_mode` and expected
+   * the flow to match.
+   */
+  private _flowColor(airflow: AirflowResult, wind: WindReading): string {
+    const flow = this._flowConfig;
+    const settings = flow.color_mode || flow.color ? flow : (this._config.arrow ?? {});
+    return this._colorFor(settings, airflow, wind);
   }
 
   /**
@@ -416,7 +446,7 @@ export class AirflowMapCard extends LitElement {
       bearing: wind.bearing === null ? null : windTravelBearing(wind.bearing),
       speed: wind.speed,
       unit: wind.speedUnit,
-      color: this._arrowColor(airflow),
+      color: this._flowColor(airflow, wind),
       opacity: BUCKET_OPACITY[airflow.bucket] * flow.opacity,
       pace: flow.speed,
     });

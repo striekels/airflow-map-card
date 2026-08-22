@@ -71,11 +71,14 @@ export interface AirflowConfig {
   labels?: AirflowLabels;
 }
 
+/** How a colour is chosen: by airflow bucket, by wind speed, or pinned. */
+export type ColorMode = 'airflow' | 'speed' | 'fixed';
+
 export interface ArrowConfig {
   /** Off by default. The flow carries direction and speed together. */
   show?: boolean;
   size?: number;
-  color_mode?: 'airflow' | 'fixed';
+  color_mode?: ColorMode;
   color?: string;
 }
 
@@ -86,6 +89,15 @@ export interface FlowConfig {
   opacity?: number;
   /** Multiplier on how fast the particles travel. 1 is the default pace. */
   speed?: number;
+  /**
+   * Unset follows `arrow.color_mode`, which is what the flow has always done
+   * and keeps every existing card looking the same. Set it to colour the flow
+   * on its own, which matters because the arrow is off by default: a card
+   * showing only the flow should not have to configure a hidden arrow to
+   * change the colour of the thing it does show.
+   */
+  color_mode?: ColorMode;
+  color?: string;
 }
 
 export type TilePreset = 'auto' | 'osm' | 'carto-light' | 'carto-dark' | 'custom';

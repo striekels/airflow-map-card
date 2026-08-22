@@ -10,6 +10,14 @@ export const DEFAULT_FLOW_OPACITY = 0.5;
 export const DEFAULT_FLOW_SPEED = 1;
 
 /**
+ * `show`, `opacity` and `speed` always have a value; the colour keys do not,
+ * because unset means "follow the arrow" and only the card knows what the arrow
+ * is set to.
+ */
+export type ResolvedFlow = Required<Pick<FlowConfig, 'show' | 'opacity' | 'speed'>> &
+  Pick<FlowConfig, 'color_mode' | 'color'>;
+
+/**
  * The flow settings with every default filled in, and `flow: true` accepted as
  * shorthand for turning it on.
  *
@@ -21,7 +29,7 @@ export const DEFAULT_FLOW_SPEED = 1;
  * drifting apart would show up as an editor whose sliders disagree with the
  * card sitting next to it.
  */
-export function resolveFlow(flow: FlowConfig | boolean | undefined): Required<FlowConfig> {
+export function resolveFlow(flow: FlowConfig | boolean | undefined): ResolvedFlow {
   const defaults = {
     show: true,
     opacity: DEFAULT_FLOW_OPACITY,
@@ -37,5 +45,9 @@ export function resolveFlow(flow: FlowConfig | boolean | undefined): Required<Fl
     show: flow.show ?? defaults.show,
     opacity: flow.opacity ?? defaults.opacity,
     speed: flow.speed ?? defaults.speed,
+    // Passed through rather than defaulted: undefined here means "follow the
+    // arrow", which is a different thing from any value this could pick.
+    color_mode: flow.color_mode,
+    color: flow.color,
   };
 }

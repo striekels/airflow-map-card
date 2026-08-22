@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  FLOW_SETTINGS_SCHEMA,
+  flowSettingsSchema,
   SHOW_SCHEMA,
   arrowSettingsSchema,
   cardSchema,
@@ -107,15 +107,32 @@ describe('arrowSettingsSchema', () => {
   it('offers a fixed colour only when the mode uses one', () => {
     expect(named({ color_mode: 'fixed' })).toContain('color');
     expect(named({ color_mode: 'airflow' })).not.toContain('color');
+    expect(named({ color_mode: 'speed' })).not.toContain('color');
     expect(named({})).not.toContain('color');
   });
 });
 
-describe('FLOW_SETTINGS_SCHEMA', () => {
-  it('offers the two things that were asked for by hand', () => {
-    // Opacity and speed are here because both were tuned by hand more than
-    // once. Nothing else about the flow has ever needed changing.
-    expect(Object.keys(leafPaths(FLOW_SETTINGS_SCHEMA as Item[]))).toEqual(['opacity', 'speed']);
+describe('flowSettingsSchema', () => {
+  const named = (flow: Parameters<typeof flowSettingsSchema>[0]) =>
+    Object.keys(leafPaths(flowSettingsSchema(flow) as Item[]));
+
+  it('offers opacity, speed and colour mode', () => {
+    expect(named({})).toEqual(['opacity', 'speed', 'color_mode']);
+  });
+
+  it('offers a fixed colour only when the mode uses one', () => {
+    expect(named({ color_mode: 'fixed' })).toContain('color');
+    expect(named({ color_mode: 'speed' })).not.toContain('color');
+    expect(named({})).not.toContain('color');
+  });
+
+  it('keeps the flow colour on the flow, not on the arrow', () => {
+    // The arrow is off by default, so a card showing only the flow must be
+    // able to colour it without configuring a hidden arrow.
+    expect(leafPaths(flowSettingsSchema({ color_mode: 'fixed' }) as Item[])).toMatchObject({
+      color_mode: [['color_mode']],
+      color: [['color']],
+    });
   });
 });
 

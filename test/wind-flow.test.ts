@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { toMetresPerSecond } from '../src/overlay/wind-flow';
+import { toMetresPerSecond } from '../src/data/wind-speed';
 
 /**
  * The flow's speed and density are both derived from this, and getting it wrong

@@ -1,3 +1,5 @@
+import { toMetresPerSecond } from '../data/wind-speed';
+
 /**
  * Animated wind flow over the map: particles carried by the wind.
  *
@@ -63,32 +65,6 @@ const FADE = 0.9;
  * 19 and blur at zoom 12. This is a legibility scale, not a measurement.
  */
 const PX_PER_MS = 8;
-
-/**
- * Rough conversion to metres per second, for the animation only.
- *
- * Exported for testing. Home Assistant weather integrations report speed in
- * whatever unit they please, and getting this wrong does not fail loudly: the
- * flow simply moves at 3.6 times the right rate for an m/s source, which looks
- * plausible and is wrong.
- */
-export function toMetresPerSecond(speed: number, unit: string | null): number {
-  switch ((unit ?? 'km/h').toLowerCase()) {
-    case 'm/s':
-      return speed;
-    case 'mph':
-      return speed * 0.44704;
-    case 'kn':
-    case 'kt':
-    case 'knots':
-      return speed * 0.514444;
-    case 'ft/s':
-      return speed * 0.3048;
-    default:
-      // km/h, and anything unrecognised. Home Assistant's own default.
-      return speed / 3.6;
-  }
-}
 
 export class WindFlow {
   private canvas?: HTMLCanvasElement;

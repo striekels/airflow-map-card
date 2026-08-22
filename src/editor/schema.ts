@@ -207,21 +207,39 @@ export const TITLE_SCHEMA = [{ name: 'title', selector: { text: {} } }];
  */
 export const SHOW_SCHEMA = [{ name: 'show', selector: { boolean: {} } }];
 
-export const FLOW_SETTINGS_SCHEMA = [
-  {
-    type: 'grid',
-    schema: [
-      {
-        name: 'opacity',
-        selector: { number: { min: 0.1, max: 1, step: 0.05, mode: 'slider' } },
-      },
-      {
-        name: 'speed',
-        selector: { number: { min: 0.25, max: 3, step: 0.25, mode: 'slider' } },
-      },
-    ],
-  },
+/**
+ * The colour options, shared by the arrow and the flow so the two cannot drift
+ * apart in either the labels or the values.
+ */
+const COLOR_MODE_OPTIONS = [
+  { value: 'airflow', label: 'By airflow direction' },
+  { value: 'speed', label: 'By wind speed' },
+  { value: 'fixed', label: 'Fixed colour' },
 ];
+
+function colorModeField(name = 'color_mode') {
+  return { name, selector: { select: { mode: 'dropdown', options: COLOR_MODE_OPTIONS } } };
+}
+
+export function flowSettingsSchema(flow: { color_mode?: string } = {}): unknown[] {
+  return [
+    {
+      type: 'grid',
+      schema: [
+        {
+          name: 'opacity',
+          selector: { number: { min: 0.1, max: 1, step: 0.05, mode: 'slider' } },
+        },
+        {
+          name: 'speed',
+          selector: { number: { min: 0.25, max: 3, step: 0.25, mode: 'slider' } },
+        },
+        colorModeField(),
+        ...(flow.color_mode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
+      ],
+    },
+  ];
+}
 
 export function arrowSettingsSchema(arrow: Partial<AirflowMapCardConfig['arrow']> = {}): unknown[] {
   const colorMode = arrow?.color_mode ?? 'airflow';
@@ -230,18 +248,7 @@ export function arrowSettingsSchema(arrow: Partial<AirflowMapCardConfig['arrow']
       type: 'grid',
       schema: [
         { name: 'size', selector: { number: { min: 20, max: 400, mode: 'slider' } } },
-        {
-          name: 'color_mode',
-          selector: {
-            select: {
-              mode: 'dropdown',
-              options: [
-                { value: 'airflow', label: 'By airflow direction' },
-                { value: 'fixed', label: 'Fixed colour' },
-              ],
-            },
-          },
-        },
+        colorModeField(),
         ...(colorMode === 'fixed' ? [{ name: 'color', selector: { text: {} } }] : []),
       ],
     },
