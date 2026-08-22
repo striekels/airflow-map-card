@@ -436,7 +436,7 @@ A `large` row takes the full width on its own line; `normal` and `small` rows sh
 
 ## Upgrading
 
-### Unreleased
+### 2.0 to 3.0
 
 Several defaults changed, which affects any card that did not set them:
 
@@ -445,6 +445,10 @@ Several defaults changed, which affects any card that did not set them:
 - **`airflow.sideways_from` is 75, was 45.** Sideways is now the narrow band, so more wind
   directions read as front-to-back or back-to-front.
 - **`flow.opacity` is 0.5, was 1.** The map stays readable underneath.
+
+Nothing was removed, so no configuration needs rewriting. New in this release, both opt-in:
+`color_mode: speed` on the arrow or the flow, and [`wind.speed_unit`](#speed-units) for
+showing the speed in km/h, m/s, mph, knots or Beaufort.
 
 ### 1.x to 2.0
 
